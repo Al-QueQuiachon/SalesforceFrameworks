@@ -30,7 +30,7 @@
                     <span>Filter</span>
                 </button>
                 <lightning-button
-                    if:true={showNewButton}
+                    if:true={isNewActionAvailable}
                     label="New"
                     variant="brand"
                     onclick={handleNewClick}
@@ -370,6 +370,27 @@
                             <lightning-tab label="Files & Notes" value="filesAndNotes" icon-name="utility:file">
                                 <div class="tab-container" role="tabpanel">
                                     <div class="files-container">
+                                        <!-- File Upload Section -->
+                                        <template if:true={selectedRecord}>
+                                            <div class="file-upload-section">
+                                                <div class="upload-header">
+                                                    <h3>Upload Files</h3>
+                                                    <p>Drag and drop files here, or click to browse</p>
+                                                </div>
+                                                <lightning-file-upload
+                                                    label="Upload Files"
+                                                    name="fileUploader"
+                                                    accept={acceptedFormats}
+                                                    record-id={selectedRecord.Id}
+                                                    onuploadfinished={handleUploadFinished}
+                                                    multiple="true">
+                                                </lightning-file-upload>
+                                            </div>
+                                        </template>
+
+                                        <!-- Divider -->
+                                        <div class="section-divider"></div>
+
                                         <!-- Loading state -->
                                         <template if:true={loadingFiles}>
                                             <div class="loading-state">
@@ -388,6 +409,9 @@
                                             
                                             <!-- Files list -->
                                             <template if:true={hasFiles}>
+                                                <div class="files-list-header">
+                                                    <h3>Files & Attachments</h3>
+                                                </div>
                                                 <ul class="files-list">
                                                     <template for:each={files} for:item="file">
                                                         <li key={file.id} class="file-item">

@@ -1037,7 +1037,57 @@ lightning-tabset .slds-tabs_scoped__item {
     color: var(--primary-color);
 }
 
-/* Files List Styling */
+/* ============================================= */
+/* File Upload Section Styling                   */
+/* ============================================= */
+.file-upload-section {
+    background-color: var(--background-elevated);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.file-upload-section:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.02);
+}
+
+.upload-header h3 {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    margin: 0 0 var(--spacing-xs) 0;
+}
+
+.upload-header p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.section-divider {
+    height: 1px;
+    background-color: var(--border-subtle);
+    margin: var(--spacing-md) 0;
+}
+
+.files-list-header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.files-list-header h3 {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* ============================================= */
+/* Files List Styling                            */
+/* ============================================= */
 .files-list {
     list-style: none;
     padding: 0;

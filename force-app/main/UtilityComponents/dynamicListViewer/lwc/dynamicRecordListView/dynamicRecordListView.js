@@ -41,7 +41,7 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
     @api textColor = '#1d1d1f';
     /** Maximum number of lookup navigations allowed (0 = disable all navigation) */
     @api maxNavigationDepth = 1;
-    /** Optional. If true, displays a 'New' button to create new records. */
+    /** @deprecated Use recordActionApiNames to control this. */
     @api showNewButton = false;
     /** Optional. Comma-separated list of Quick Action API names to show in the record modal. */
     @api recordActionApiNames;
@@ -347,6 +347,9 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
                     // Load related objects
                     this.loadRelatedObjects(objectApiName);
                     
+                    // Load files and attachments for this record
+                    this.loadFilesAndAttachments();
+                    
                     // Load available actions for this record
                     this.loadObjectActions(objectApiName, recordId);
                     
@@ -564,7 +567,8 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
                  this.loadPageLayoutRelatedLists(this.selectedRecord.attributes.type);
             }
         } else if (selectedTabValue === 'filesAndNotes') {
-            this.handleFilesAndNotesClick();
+            // Load files whenever the Files & Notes tab is selected
+            this.loadFilesAndAttachments();
         } else if (selectedTabValue === 'activityHistory') {
             this.handleChatterPostsClick();
         }
@@ -710,18 +714,35 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
             return;
         }
         
+        // Always load files when this tab is accessed
+        this.loadFilesAndAttachments();
+    }
+
+    /**
+     * Load files and attachments for the current record
+     */
+    loadFilesAndAttachments() {
         this.loadingFiles = true;
         this.files = [];
         
+        // Simplified field list for ContentDocumentLinks - some Apex methods may not support deep relationships
+        const contentDocumentLinkFields = [
+            'Id', 'ContentDocumentId', 'LinkedEntityId', 'ShareType', 'Visibility'
+        ];
+        
         Promise.all([
-            this.fetchRelatedRecords('ContentDocumentLinks'), // Modern Files & Notes (ContentNote)
+            this.fetchRelatedRecordsWithFields('ContentDocumentLinks', contentDocumentLinkFields),
             this.fetchRelatedRecords('Attachments'),          // Classic Attachments
             this.fetchRelatedRecords('Notes')                 // Classic Notes
-        ]).then(([contentLinks, classicAttachments, classicNotes]) => {
+        ]).then(async ([contentLinks, classicAttachments, classicNotes]) => {
             let allFiles = [];
 
             if (contentLinks && contentLinks.length > 0) {
-                allFiles.push(...this.formatFiles(contentLinks));
+                console.log('ContentDocumentLinks found:', contentLinks.length);
+                
+                // Get ContentDocument details for each link
+                const enrichedLinks = await this.enrichContentDocumentLinks(contentLinks);
+                allFiles.push(...this.formatFiles(enrichedLinks));
             }
             if (classicAttachments && classicAttachments.length > 0) {
                 allFiles.push(...this.formatAttachments(classicAttachments));
@@ -743,33 +764,159 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
             this.loadingFiles = false;
         });
     }
+
+    /**
+     * Fetch related records with specific field requirements
+     * @param {String} relationshipName - Name of the relationship to query
+     * @param {Array} fields - Array of field API names to fetch
+     * @returns {Promise} Promise that resolves with related records or empty array
+     */
+    fetchRelatedRecordsWithFields(relationshipName, fields) {
+        if (!this.isValidRecord()) {
+            return Promise.resolve([]);
+        }
+        
+        const params = {
+            objectApiName: this.selectedRecord.attributes.type,
+            parentId: this.selectedRecord.Id,
+            relationshipName: relationshipName,
+            fields: fields,
+            maxRecords: 50
+        };
+        
+        return getRelatedRecords(params).catch(() => []);
+    }
+
+    /**
+     * Enrich ContentDocumentLinks with ContentDocument data
+     * @param {Array} contentLinks - Array of ContentDocumentLink records
+     * @returns {Promise<Array>} Promise resolving to enriched links
+     */
+    async enrichContentDocumentLinks(contentLinks) {
+        console.log('Enriching ContentDocumentLinks:', contentLinks);
+        
+        // Extract unique ContentDocument IDs
+        const documentIds = [...new Set(contentLinks.map(link => link.ContentDocumentId))];
+        console.log('Document IDs to fetch:', documentIds);
+        
+        if (documentIds.length === 0) {
+            return contentLinks;
+        }
+        
+        try {
+            // Use getRecords to fetch ContentDocument details
+            const contentDocuments = await getRecords({
+                objectApiName: 'ContentDocument',
+                fields: ['Id', 'Title', 'FileType', 'FileExtension', 'ContentSize', 'CreatedDate', 'CreatedBy.Name', 'Description'],
+                filters: JSON.stringify([{
+                    field: 'Id',
+                    operator: 'in',
+                    value: documentIds.join(',')
+                }]),
+                recordsPerPage: 50,
+                pageNumber: 1,
+                searchTerm: '',
+                sortField: 'Id',
+                sortDirection: 'asc'
+            });
+            
+            console.log('Fetched ContentDocuments:', contentDocuments);
+            
+            // Create a map of ContentDocument ID to ContentDocument record
+            const docMap = new Map();
+            if (contentDocuments && contentDocuments.records) {
+                contentDocuments.records.forEach(doc => {
+                    docMap.set(doc.Id, doc);
+                });
+            }
+            
+            // Enrich the links with ContentDocument data
+            return contentLinks.map(link => {
+                const enrichedLink = { ...link };
+                const contentDoc = docMap.get(link.ContentDocumentId);
+                if (contentDoc) {
+                    enrichedLink.ContentDocument = contentDoc;
+                }
+                return enrichedLink;
+            });
+            
+        } catch (error) {
+            console.error('Error fetching ContentDocument details:', error);
+            // Return original links if enrichment fails
+            return contentLinks;
+        }
+    }
+
+    /**
+     * Handle successful file upload
+     * @param {Event} event - The upload finished event
+     */
+    handleUploadFinished(event) {
+        const uploadedFiles = event.detail.files;
+        
+        // Show success message
+        const fileCount = uploadedFiles.length;
+        const message = fileCount === 1 
+            ? `File "${uploadedFiles[0].name}" uploaded successfully`
+            : `${fileCount} files uploaded successfully`;
+            
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Success',
+            message: message,
+            variant: 'success'
+        }));
+
+        // Refresh the files list to show the newly uploaded files
+        this.loadFilesAndAttachments();
+    }
     
     /**
      * Format file records for display
      */
     formatFiles(fileLinks) {
+        console.log('Formatting files:', JSON.stringify(fileLinks, null, 2));
+        
         return fileLinks.map(link => {
             // Try to extract file information from ContentDocument relationship
             const contentDoc = link.ContentDocument || {};
-            let fileType = contentDoc.FileType || 'UNKNOWN';
+            console.log('Processing ContentDocument:', JSON.stringify(contentDoc, null, 2));
+            
+            let fileType = contentDoc.FileType || 'FILE';
+            let fileExtension = contentDoc.FileExtension || '';
+            
+            // Get the title with better fallback logic
+            let title = 'Document'; // Default fallback
+            
+            if (contentDoc.Title) {
+                title = contentDoc.Title;
+            } else if (contentDoc.LatestPublishedVersion && contentDoc.LatestPublishedVersion.Title) {
+                title = contentDoc.LatestPublishedVersion.Title;
+            } else if (fileExtension) {
+                title = `File.${fileExtension}`;
+            }
+            
+            console.log('Final title for file:', title);
             
             // Modern notes have a file type of SNOTE
             if (fileType === 'SNOTE') {
                 fileType = 'Note';
             }
 
+            // Use ContentDocumentId if we don't have the full ContentDocument
+            const documentId = contentDoc.Id || link.ContentDocumentId;
+            
             return {
                 id: link.Id,
-                title: contentDoc.Title || 'Untitled',
+                title: title,
                 fileType: fileType,
-                iconName: this.getFileIcon(fileType, contentDoc.FileExtension),
-                fileSize: this.formatFileSize(contentDoc.ContentSize || 0),
+                iconName: this.getFileIcon(fileType, fileExtension),
+                fileSize: this.formatFileSize(contentDoc.ContentSize || contentDoc.Size || 0),
                 createdDate: contentDoc.CreatedDate ? this.formatDateTime(contentDoc.CreatedDate) : '',
-                rawCreatedDate: contentDoc.CreatedDate, // For sorting
-                createdBy: contentDoc.CreatedBy?.Name || 'Unknown',
+                rawCreatedDate: contentDoc.CreatedDate || new Date().toISOString(), // Use current date as fallback for sorting
+                createdBy: contentDoc.CreatedBy?.Name || 'Unknown User',
                 description: contentDoc.Description || '',
-                // Modern Notes (ContentNote) are downloaded just like files
-                downloadUrl: `/sfc/servlet.shepherd/document/download/${contentDoc.Id || ''}`
+                // Use the document ID for download - try both paths
+                downloadUrl: documentId ? `/sfc/servlet.shepherd/document/download/${documentId}` : '#'
             };
         });
     }
@@ -859,10 +1006,12 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
             'css': 'doctype:code',
             'java': 'doctype:code',
             'py': 'doctype:code',
-            'json': 'doctype:json'
+            'json': 'doctype:json',
+            'file': 'doctype:attachment'  // Default for generic FILE type
         };
         
-        return iconMap[type] || iconMap[extension] || 'doctype:unknown';
+        // First try to match by extension, then by file type
+        return iconMap[extension] || iconMap[type] || 'doctype:attachment';
     }
     
     /**
@@ -883,6 +1032,14 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
      */
     get hasFiles() {
         return this.files && this.files.length > 0;
+    }
+
+    /**
+     * Get accepted file formats for upload
+     * This allows most common file types
+     */
+    get acceptedFormats() {
+        return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv'];
     }
 
     /**
@@ -2002,7 +2159,11 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
      * @returns {boolean} True if pagination should be displayed.
      */
     get showPagination() {
-        return this.totalRecords > this.recordsPerPage;
+        return this.totalPages > 1;
+    }
+
+    get isNewActionAvailable() {
+        return this.recordActionApiNames && this.recordActionApiNames.toLowerCase().includes('new');
     }
 
     // Object icon for list header - automatically determined from objectApiName
@@ -2317,29 +2478,38 @@ export default class DynamicRecordListView extends NavigationMixin(LightningElem
      * Load available actions for the object
      */
     loadObjectActions(objectApiName, recordId) {
-        // Clear previous actions
         this.objectActions = [];
         if (!this.recordActionApiNames) {
-            console.log('No recordActionApiNames specified.');
             return;
         }
 
-        getObjectActions({
-            actionNames: this.recordActionApiNames.split(','),
-            recordId: recordId
-        })
-        .then(actions => {
-            // Manually add the standard "New", "Edit" and "Delete" actions
-            const standardActions = [
-                { name: 'New', label: 'New', type: 'Standard' },
-                { name: 'Edit', label: 'Edit', type: 'Standard' },
-                { name: 'Delete', label: 'Delete', type: 'Standard' }
-            ];
-            this.objectActions = [...standardActions, ...actions];
-        })
-        .catch(error => {
-            this.handleError(error, 'Error loading object actions');
-        });
+        const actionNames = this.recordActionApiNames.split(',').map(name => name.trim());
+        const standardActionMap = {
+            'New': { name: 'New', label: 'New', type: 'Standard' },
+            'Edit': { name: 'Edit', label: 'Edit', type: 'Standard' },
+            'Delete': { name: 'Delete', label: 'Delete', type: 'Standard' }
+        };
+
+        const standardActions = actionNames
+            .filter(name => standardActionMap[name])
+            .map(name => standardActionMap[name]);
+
+        const customActionNames = actionNames.filter(name => !standardActionMap[name]);
+
+        if (customActionNames.length > 0) {
+            getObjectActions({
+                actionNames: customActionNames,
+                recordId: recordId
+            })
+            .then(customActions => {
+                this.objectActions = [...standardActions, ...customActions];
+            })
+            .catch(error => {
+                this.handleError(error, 'Error loading custom object actions');
+            });
+        } else {
+            this.objectActions = standardActions;
+        }
     }
     
     /**
