@@ -1,0 +1,372 @@
+<template>
+    <div class={formContainerClass} style={formContainerStyle}>
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <lightning-spinner 
+                alternative-text="Submitting your report..." 
+                size="large" 
+                class="loading-spinner">
+            </lightning-spinner>
+        </template>
+
+        <!-- Dynamic Header Section -->
+        <div class="oig-header" style="background: linear-gradient(135deg, {headerBgColor} 0%, {headerGradientEnd} 100%);">
+            <div class="header-icon">
+                <lightning-icon icon-name={headerIcon} size="large" class="oig-icon"></lightning-icon>
+            </div>
+            <h1 class="form-title">{headerTitle}</h1>
+            <p class="form-subtitle">{headerSubtitle}</p>
+            <div class="security-notice">
+                <lightning-icon icon-name="utility:lock" size="small" class="lock-icon"></lightning-icon>
+                <span>{securityNotice}</span>
+            </div>
+        </div>
+
+        <!-- Mode Selection Tabs -->
+        <div class="mode-tabs">
+            <lightning-button 
+                label="Submit New Report"
+                data-mode="submit"
+                onclick={handleModeChange}
+                variant={submitModeVariant}
+                class="mode-tab">
+            </lightning-button>
+            <lightning-button 
+                label="View My Submissions"
+                data-mode="view"
+                onclick={handleModeChange}
+                variant={viewModeVariant}
+                class="mode-tab">
+            </lightning-button>
+        </div>
+
+        <!-- Error Display -->
+        <template if:true={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <h2 class="slds-assistive-text">Error</h2>
+                <lightning-icon icon-name="utility:error" size="small" class="slds-m-right_x-small"></lightning-icon>
+                <span>{error}</span>
+            </div>
+        </template>
+
+        <!-- Dynamic Form -->
+        <template if:true={showForm}>
+            <template if:true={isSubmitMode}>
+            <form class="oig-form" onsubmit={handleSubmit}>
+                
+                <!-- Dynamic Sections -->
+                <template for:each={dynamicSections} for:item="section">
+                    <div key={section.id} class="form-section">
+                        
+                        <!-- Section Title -->
+                        <h3 class="section-title" style="color: {sectionTitleColor}; border-bottom: 2px solid {sectionTitleBorder};">
+                            <lightning-icon icon-name={section.icon} size="small"></lightning-icon>
+                            {section.title}
+                        </h3>
+                        
+                        <!-- Dynamic Fields for Section -->
+                        <template for:each={section.fields} for:item="field">
+                            <template key={field.id} if:true={field.isVisible}>
+                                <div key={field.id} class="form-field-container" style={field.containerStyle}>
+                                    
+                                    <!-- Text Input Field -->
+                                    <template if:true={field.isTextInput}>
+                                        <lightning-input 
+                                            label={field.label}
+                                            type={field.type}
+                                            data-field={field.fieldName}
+                                            value={field.value}
+                                            onchange={handleInputChange}
+                                            required={field.isRequired}
+                                            placeholder={field.placeholder}
+                                            max={field.max}
+                                            class="dynamic-field">
+                                        </lightning-input>
+                                    </template>
+                                    
+                                    <!-- Checkbox Field -->
+                                    <template if:true={field.isCheckbox}>
+                                        <lightning-input 
+                                            type="checkbox"
+                                            label={field.label}
+                                            data-field={field.fieldName}
+                                            checked={field.value}
+                                            onchange={handleInputChange}
+                                            class="dynamic-field">
+                                        </lightning-input>
+                                    </template>
+                                    
+                                    <!-- Radio Group Field -->
+                                    <template if:true={field.isRadio}>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label">
+                                                <template if:true={field.isRequired}>
+                                                    <abbr class="slds-required" title="required">*</abbr>
+                                                </template>
+                                                {field.label}
+                                            </label>
+                                            <lightning-radio-group 
+                                                name={field.id}
+                                                options={field.options}
+                                                value={field.value}
+                                                data-field={field.fieldName}
+                                                onchange={handleInputChange}
+                                                type="radio"
+                                                class="dynamic-field">
+                                            </lightning-radio-group>
+                                        </div>
+                                    </template>
+                                    
+                                    <!-- Combobox Field -->
+                                    <template if:true={field.isCombobox}>
+                                        <lightning-combobox 
+                                            label={field.label}
+                                            data-field={field.fieldName}
+                                            value={field.value}
+                                            options={field.options}
+                                            onchange={handleInputChange}
+                                            required={field.isRequired}
+                                            placeholder={field.placeholder}
+                                            class="dynamic-field">
+                                        </lightning-combobox>
+                                    </template>
+                                    
+                                    <!-- Textarea Field -->
+                                    <template if:true={field.isTextarea}>
+                                        <lightning-textarea 
+                                            label={field.label}
+                                            data-field={field.fieldName}
+                                            value={field.value}
+                                            onchange={handleInputChange}
+                                            required={field.isRequired}
+                                            rows={field.rows}
+                                            placeholder={field.placeholder}
+                                            class="dynamic-field">
+                                        </lightning-textarea>
+                                    </template>
+                                    
+                                </div>
+                            </template>
+                        </template>
+                        
+                        <!-- Static Notices Section -->
+                        <template if:true={section.isNoticesSection}>
+                            <div class="notice-content">
+                                <template for:each={parsedNotices} for:item="notice">
+                                    <div key={notice.title} class="notice-item">
+                                        <h4>{notice.title}</h4>
+                                        <p>{notice.content}</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        
+                    </div>
+                </template>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <lightning-button 
+                        label="Clear Form"
+                        onclick={handleReset}
+                        variant="neutral"
+                        class="reset-button">
+                    </lightning-button>
+                    <lightning-button 
+                        label="Submit Report"
+                        type="submit"
+                        variant="brand"
+                        disabled={isSubmitDisabled}
+                        class="submit-button">
+                    </lightning-button>
+                </div>
+            </form>
+            </template>
+        </template>
+
+        <!-- View Submissions Interface -->
+        <template if:true={isViewMode}>
+            <div class="view-submissions-container">
+                <h2 class="view-title">
+                    <lightning-icon icon-name="utility:search" size="small"></lightning-icon>
+                    View Your Submissions
+                </h2>
+                
+                <div class="lookup-type-selection">
+                    <lightning-radio-group 
+                        name="lookupType"
+                        label="How would you like to look up your submissions?"
+                        options={lookupTypeOptions}
+                        value={lookupTypeValue}
+                        onchange={handleLookupTypeChange}
+                        type="radio">
+                    </lightning-radio-group>
+                </div>
+
+                <!-- Anonymous ID Lookup -->
+                <template if:true={showAnonymousLookup}>
+                    <div class="lookup-section">
+                        <lightning-input 
+                            label="Anonymous ID"
+                            type="text"
+                            data-field="anonymousId"
+                            value={viewSubmissionsData.anonymousId}
+                            onchange={handleViewSubmissionInputChange}
+                            placeholder="Enter your Anonymous ID"
+                            required>
+                        </lightning-input>
+                        <p class="help-text">
+                            <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                            Enter the Anonymous ID that was emailed to you after submitting your report.
+                        </p>
+                    </div>
+                </template>
+
+                <!-- Contact Information Lookup -->
+                <template if:true={showContactLookup}>
+                    <div class="lookup-section">
+                        <div class="form-row">
+                            <lightning-input 
+                                label="Full Name"
+                                type="text"
+                                data-field="fullName"
+                                value={viewSubmissionsData.fullName}
+                                onchange={handleViewSubmissionInputChange}
+                                placeholder="Enter your full name"
+                                required
+                                class="half-width">
+                            </lightning-input>
+                            <lightning-input 
+                                label="Email Address"
+                                type="email"
+                                data-field="email"
+                                value={viewSubmissionsData.email}
+                                onchange={handleViewSubmissionInputChange}
+                                placeholder="Enter your email address"
+                                required
+                                class="half-width">
+                            </lightning-input>
+                        </div>
+                        <p class="help-text">
+                            <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                            Enter the name and email address you used when submitting your report.
+                        </p>
+                    </div>
+                </template>
+
+                <!-- Search Button -->
+                <div class="search-actions">
+                    <lightning-button 
+                        label="Search Submissions"
+                        onclick={handleViewSubmissions}
+                        variant="brand"
+                        disabled={isViewSubmissionsDisabled}
+                        class="search-button">
+                    </lightning-button>
+                </div>
+
+                <!-- Loading Spinner for Submissions -->
+                <template if:true={isLoadingSubmissions}>
+                    <lightning-spinner 
+                        alternative-text="Loading submissions..." 
+                        size="medium">
+                    </lightning-spinner>
+                </template>
+
+                <!-- Existing Submissions Display -->
+                <template if:true={hasExistingSubmissions}>
+                    <div class="submissions-results">
+                        <h3 class="results-title">Your Submissions</h3>
+                        <template for:each={existingSubmissions} for:item="submission">
+                            <div key={submission.Id} class="submission-card">
+                                <div class="submission-header">
+                                    <h4>{submission.Name}</h4>
+                                    <span class="submission-status" data-status={submission.Status}>
+                                        {submission.Status}
+                                    </span>
+                                </div>
+                                <div class="submission-details">
+                                    <p><strong>Category:</strong> {submission.Category}</p>
+                                    <p><strong>Status:</strong> {submission.Status}</p>
+                                    <p><strong>Severity:</strong> {submission.Severity}</p>
+                                    <p><strong>Submitted:</strong> {submission.CreatedDate}</p>
+                                    <template if:true={submission.AnonymousId}>
+                                        <p><strong>Anonymous ID:</strong> {submission.AnonymousId}</p>
+                                    </template>
+                                </div>
+                                <template if:true={submission.ReportDetails}>
+                                    <div class="submission-description">
+                                        <p><strong>Description:</strong></p>
+                                        <p class="description-text">{submission.ReportDetails}</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Success Message -->
+        <template if:true={isSubmitMode}>
+            <template if:true={showSuccess}>
+                <div class="success-container">
+                    <div class="success-icon">
+                        <lightning-icon icon-name="utility:success" size="large"></lightning-icon>
+                    </div>
+                    <h2 class="success-title">Report Submitted Successfully</h2>
+                    <div class="success-content">
+                        <p class="success-message">
+                            Thank you for reporting this matter to the Office of Inspector General. 
+                            Your report has been received and will be reviewed according to OIG procedures.
+                        </p>
+                        
+                        <div class="submission-details">
+                            <p><strong>Report Number:</strong> {submissionResult.reportNumber}</p>
+                            <template if:true={submissionResult.anonymousId}>
+                                <p><strong>Anonymous ID:</strong> {submissionResult.anonymousId}</p>
+                                <p class="anonymous-notice-better">
+                                    <lightning-icon icon-name="utility:warning" size="small" class="anon-warning-icon"></lightning-icon>
+                                    <span>
+                                        <strong>Important:</strong> Save this Anonymous ID to track your report status.
+                                    </span>
+                                </p>
+                            </template>
+                            <template if:false={submissionResult.anonymousId}>
+                                <template if:false={formData.isAnonymous}>
+                                    <p class="anonymous-notice">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <strong>Note:</strong> You can track your report using your full name and email address.
+                                    </p>
+                                </template>
+                                <template if:true={formData.isAnonymous}>
+                                    <p class="anonymous-notice">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <strong>Note:</strong> No Anonymous ID was generated since no email address was provided. You will not be able to track your report online. Please save your Report Number for reference.
+                                    </p>
+                                </template>
+                            </template>
+                        </div>
+                        
+                        <div class="next-steps">
+                            <h4>What Happens Next</h4>
+                            <ul>
+                                <li>Your report will undergo an initial review within 5 business days</li>
+                                <li>You will be notified of any follow-up actions if contact information was provided</li>
+                                <li>All reports are handled confidentially according to OIG protocols</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="success-actions">
+                        <lightning-button
+                            label="Submit Another Report"
+                            onclick={handleSubmitAnother}
+                            variant="brand">
+                        </lightning-button>
+                    </div>
+                </div>
+            </template>
+        </template>
+    </div>
+</template> 

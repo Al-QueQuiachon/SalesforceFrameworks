@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__RecordPage</target>
+        <target>lightning__Tab</target>
+        <target>lightningCommunity__Page</target>
+        <target>lightningCommunity__Default</target>
+        <target>lightningCommunity__Page_Layout</target>
+        <target>lightningCommunity__Theme_Layout</target>
+    </targets>
+
+    <masterLabel>OIG Report Submission</masterLabel>
+    <description>Dynamic and configurable component for submitting reports to the Office of Inspector General (OIG) with customizable sections, fields, and layout</description>
+    
+    <targetConfigs>
+        <targetConfig targets="lightning__AppPage,lightning__HomePage">
+            <property name="headerTitle" type="String" default="Report Fraud, Waste &amp; Abuse" label="Header Title" description="Main title displayed at the top of the form"/>
+            <property name="headerSubtitle" type="String" default="Office of Inspector General (OIG) - Confidential Reporting Portal" label="Header Subtitle" description="Subtitle text displayed below the main title"/>
+            <property name="formWidth" type="String" default="100%" label="Form Width" description="CSS width for the form container (e.g., '100%', '800px', 'max-width: 900px')"/>
+            <property name="formMaxWidth" type="String" default="900px" label="Form Maximum Width" description="Maximum width constraint for the form"/>
+            <property name="headerBgColor" type="String" default="#1e3a8a" label="Header Background Color" description="Main color for the header background (start of gradient)"/>
+            <property name="headerGradientEnd" type="String" default="#2563eb" label="Header Gradient End Color" description="End color for the header background gradient"/>
+            <property name="sectionTitleColor" type="String" default="#1e40af" label="Section Title Color" description="Color for section titles"/>
+            <property name="sectionTitleBorder" type="String" default="#3b82f6" label="Section Title Border Color" description="Border color for section titles"/>
+            <property name="buttonColor" type="String" default="#1e40af" label="Button Color" description="Primary button color (background)"/>
+            <property name="buttonColorHover" type="String" default="#1e3a8a" label="Button Hover Color" description="Primary button color (hover)"/>
+            
+            <!-- Combined Sections and Fields Configuration -->
+            <property name="sectionsAndFields" type="String" 
+                default="Reporting Method - anonymousOption:radio:How would you like to submit this report?:isAnonymous:true:100%:Provide my contact information|false,Submit anonymously|true, Contact Information - reporterName:text:Full Name:reporterName:true:50%;reporterEmail:email:Email Address:reporterEmail:true:50%;reporterPhone:tel:Phone Number (Optional):reporterPhone:false:50%;consentToContact:checkbox:I consent to be contacted about this report:consentToContact:false:100%;preferredContactMethod:radio:Preferred Contact Method:preferredContactMethod:false:100%:Email|Email,Phone|Phone,Do Not Contact|Do Not Contact, Report Details - category:combobox:Category:category:true:50%:categoryOptions;severity:combobox:Severity:severity:true:50%:severityOptions;reportDetails:textarea:Detailed Description:reportDetails:true:100%:6, Incident Information - incidentLocation:text:Incident Location (Optional):incidentLocation:false:50%;incidentDate:date:Incident Date (Optional):incidentDate:false:50%;witnessInfo:textarea:Witness Information (Optional):witnessInfo:false:100%:3" 
+                label="Sections and Fields" 
+                description="Format: SectionTitle - field1;field2, SectionTitle2 - field3;field4. Field format: fieldId:type:label:fieldName:required:width:options" />
+                
+            <!-- Legacy Properties (for backward compatibility) -->
+            <property name="sectionTitles" type="String" default="" label="Section Titles (Legacy)" 
+                description="Leave blank to use Sections and Fields instead" />
+        </targetConfig>
+        <targetConfig targets="lightningCommunity__Default">
+            <property name="headerTitle" type="String" default="Report Fraud, Waste &amp; Abuse" label="Header Title" description="Main title displayed at the top of the form"/>
+            <property name="headerSubtitle" type="String" default="Office of Inspector General (OIG) - Confidential Reporting Portal" label="Header Subtitle" description="Subtitle text displayed below the main title"/>
+            <property name="formWidth" type="String" default="100%" label="Form Width" description="CSS width for the form container (e.g., '100%', '800px', 'max-width: 900px')"/>
+            <property name="formMaxWidth" type="String" default="900px" label="Form Maximum Width" description="Maximum width constraint for the form"/>
+            <property name="headerBgColor" type="String" default="#1e3a8a" label="Header Background Color" description="Main color for the header background (start of gradient)"/>
+            <property name="headerGradientEnd" type="String" default="#2563eb" label="Header Gradient End Color" description="End color for the header background gradient"/>
+            <property name="sectionTitleColor" type="String" default="#1e40af" label="Section Title Color" description="Color for section titles"/>
+            <property name="sectionTitleBorder" type="String" default="#3b82f6" label="Section Title Border Color" description="Border color for section titles"/>
+            <property name="buttonColor" type="String" default="#1e40af" label="Button Color" description="Primary button color (background)"/>
+            <property name="buttonColorHover" type="String" default="#1e3a8a" label="Button Hover Color" description="Primary button color (hover)"/>
+            
+            <!-- Combined Sections and Fields Configuration -->
+            <property name="sectionsAndFields" type="String" 
+                default="Reporting Method - anonymousOption:radio:How would you like to submit this report?:isAnonymous:true:100%:Provide my contact information|false,Submit anonymously|true, Contact Information - reporterName:text:Full Name:reporterName:true:50%;reporterEmail:email:Email Address:reporterEmail:true:50%;reporterPhone:tel:Phone Number (Optional):reporterPhone:false:50%;consentToContact:checkbox:I consent to be contacted about this report:consentToContact:false:100%;preferredContactMethod:radio:Preferred Contact Method:preferredContactMethod:false:100%:Email|Email,Phone|Phone,Do Not Contact|Do Not Contact, Report Details - category:combobox:Category:category:true:50%:categoryOptions;severity:combobox:Severity:severity:true:50%:severityOptions;reportDetails:textarea:Detailed Description:reportDetails:true:100%:6, Incident Information - incidentLocation:text:Incident Location (Optional):incidentLocation:false:50%;incidentDate:date:Incident Date (Optional):incidentDate:false:50%;witnessInfo:textarea:Witness Information (Optional):witnessInfo:false:100%:3" 
+                label="Sections and Fields" 
+                description="Format: SectionTitle - field1;field2, SectionTitle2 - field3;field4. Field format: fieldId:type:label:fieldName:required:width:options" />
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle> 

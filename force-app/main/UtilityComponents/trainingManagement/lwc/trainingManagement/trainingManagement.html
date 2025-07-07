@@ -1,0 +1,583 @@
+<template>
+    <div class="training-container">
+        <div class="header">
+            <h1 class="page-title">
+                <lightning-icon icon-name="utility:education" size="medium" class="title-icon"></lightning-icon>
+                OIG Training Center
+            </h1>
+            <p class="page-subtitle">Manage your professional development and training requirements</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button class={coursesTabClass} data-tab="courses" onclick={handleTabClick}>
+                    <lightning-icon icon-name="utility:education" size="small"></lightning-icon>
+                    Course Catalog
+                </button>
+                <button class={sessionsTabClass} data-tab="sessions" onclick={handleTabClick}>
+                    <lightning-icon icon-name="utility:event" size="small"></lightning-icon>
+                    Upcoming Sessions
+                </button>
+                <button class={myTrainingTabClass} data-tab="mytraining" onclick={handleTabClick}>
+                    <lightning-icon icon-name="utility:user" size="small"></lightning-icon>
+                    My Training
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="loading-overlay">
+                <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Courses Tab -->
+        <template if:true={showCourses}>
+            <div class="tab-content">
+                <!-- Course List View -->
+                <template if:true={showCoursesList}>
+                    <div class="section-header">
+                        <h2>Available Training Courses</h2>
+                        <button class="btn btn-primary" onclick={handleNewCourse}>
+                            <lightning-icon icon-name="utility:add" size="x-small"></lightning-icon>
+                            New Course
+                        </button>
+                    </div>
+                    
+                    <div class="cards-grid">
+                        <template for:each={courses} for:item="course">
+                            <div key={course.Id} class="course-card clickable" data-course-id={course.Id} onclick={handleCourseSelect}>
+                                <div class="card-header">
+                                    <h3 class="course-title">{course.Name}</h3>
+                                    <span class={course.Course_Category__c}>{course.Course_Category__c}</span>
+                                </div>
+                                <div class="card-body">
+                                    <p class="course-description">{course.Course_Description__c}</p>
+                                    <div class="course-meta">
+                                        <span class="duration">
+                                            <lightning-icon icon-name="utility:clock" size="xx-small"></lightning-icon>
+                                            {course.Duration_Hours__c} hours
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <span class="view-details">Click to view details & sessions</span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Course Detail View -->
+                <template if:true={showCourseDetail}>
+                    <div class="course-detail-view">
+                        <div class="detail-header">
+                            <button class="btn btn-secondary back-btn" onclick={handleBackToCourses}>
+                                <lightning-icon icon-name="utility:back" size="x-small"></lightning-icon>
+                                Back to Courses
+                            </button>
+                            <button class="btn btn-primary" onclick={handleNewSession}>
+                                <lightning-icon icon-name="utility:add" size="x-small"></lightning-icon>
+                                Schedule Session
+                            </button>
+                        </div>
+
+                        <div class="course-detail-content">
+                            <div class="course-header-detail">
+                                <h1 class="course-title-large">{selectedCourse.Name}</h1>
+                                <span class={selectedCourse.Course_Category__c}>{selectedCourse.Course_Category__c}</span>
+                            </div>
+                            
+                            <div class="course-info-grid">
+                                <div class="info-section">
+                                    <h3>Course Description</h3>
+                                    <p class="description-text">{selectedCourse.Course_Description__c}</p>
+                                </div>
+                                
+                                <div class="info-section">
+                                    <h3>Course Details</h3>
+                                    <div class="detail-item">
+                                        <lightning-icon icon-name="utility:clock" size="x-small"></lightning-icon>
+                                        <span><strong>Duration:</strong> {selectedCourse.Duration_Hours__c} hours</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <lightning-icon icon-name="utility:education" size="x-small"></lightning-icon>
+                                        <span><strong>Category:</strong> {selectedCourse.Course_Category__c}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sessions-section">
+                                <h3>Upcoming Sessions</h3>
+                                <template if:true={courseSessions.length}>
+                                    <div class="sessions-list">
+                                        <template for:each={courseSessions} for:item="sessionDetail">
+                                            <div key={sessionDetail.session.Id} class="session-card compact">
+                                                <div class="session-header">
+                                                    <div class="session-info">
+                                                                                                                 <h4 class="session-name">
+                                                             <template if:true={sessionDetail.session.Name}>
+                                                                 {sessionDetail.session.Name}
+                                                             </template>
+                                                             <template if:false={sessionDetail.session.Name}>
+                                                                 Training Session
+                                                             </template>
+                                                         </h4>
+                                                         <div class="session-meta">
+                                                             <span class="session-date">
+                                                                 <lightning-icon icon-name="utility:event" size="xx-small"></lightning-icon>
+                                                                 {sessionDetail.session.Session_Date__c}
+                                                             </span>
+                                                             <template if:true={sessionDetail.session.Start_Time__c}>
+                                                                 <span class="session-time">
+                                                                     {sessionDetail.session.Start_Time__c} - {sessionDetail.session.End_Time__c}
+                                                                 </span>
+                                                             </template>
+                                                             <template if:true={sessionDetail.session.Location__c}>
+                                                                 <span class="session-location">
+                                                                     <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
+                                                                     {sessionDetail.session.Location__c}
+                                                                 </span>
+                                                             </template>
+                                                             <template if:true={sessionDetail.session.Session_Link__c}>
+                                                                 <span class="session-link">
+                                                                     <lightning-icon icon-name="utility:link" size="xx-small"></lightning-icon>
+                                                                     <a href={sessionDetail.session.Session_Link__c} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                                                                 </span>
+                                                             </template>
+                                                         </div>
+                                                    </div>
+                                                    <div class="session-actions">
+                                                        <span class="capacity-info">
+                                                            {sessionDetail.attendeeCount}/{sessionDetail.session.Max_Attendees__c}
+                                                        </span>
+                                                        <template if:false={sessionDetail.isUserRegistered}>
+                                                            <template if:true={sessionDetail.spotsAvailable}>
+                                                                <button class="btn btn-success btn-sm" 
+                                                                        data-session-id={sessionDetail.session.Id} 
+                                                                        onclick={handleRegister}>
+                                                                    Join Session
+                                                                </button>
+                                                            </template>
+                                                            <template if:false={sessionDetail.spotsAvailable}>
+                                                                <button class="btn btn-disabled btn-sm" disabled>
+                                                                    Full
+                                                                </button>
+                                                            </template>
+                                                        </template>
+                                                        <template if:true={sessionDetail.isUserRegistered}>
+                                                            <button class="btn btn-warning btn-sm" 
+                                                                    data-session-id={sessionDetail.session.Id} 
+                                                                    onclick={handleCancel}>
+                                                                Cancel
+                                                            </button>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template if:false={courseSessions.length}>
+                                    <div class="no-sessions">
+                                        <lightning-icon icon-name="utility:info" size="medium"></lightning-icon>
+                                        <p>No upcoming sessions scheduled for this course.</p>
+                                        <button class="btn btn-primary" onclick={handleNewSession}>
+                                            <lightning-icon icon-name="utility:add" size="x-small"></lightning-icon>
+                                            Schedule First Session
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- Sessions Tab -->
+        <template if:true={showSessions}>
+            <div class="tab-content">
+                                    <div class="section-header">
+                        <h2>Upcoming Training Sessions</h2>
+                        <div class="header-actions">
+                            
+                            <button class="btn btn-primary" onclick={handleNewSession}>
+                                <lightning-icon icon-name="utility:add" size="x-small"></lightning-icon>
+                                Schedule Session
+                            </button>
+                        </div>
+                    </div>
+                
+                <div class="sessions-list">
+                    <template for:each={sessions} for:item="sessionDetail">
+                        <div key={sessionDetail.session.Id} class="session-card">
+                            <div class="session-header">
+                                <div class="session-info">
+                                    <h3 class="session-title">{sessionDetail.session.Training_Course__r.Name}</h3>
+                                    <template if:true={sessionDetail.session.Training_Course__r.Course_Category__c}>
+                                        <span class={sessionDetail.session.Training_Course__r.Course_Category__c}>
+                                            {sessionDetail.session.Training_Course__r.Course_Category__c}
+                                        </span>
+                                    </template>
+                                </div>
+                                <div class="session-actions">
+                                    <template if:false={sessionDetail.isUserRegistered}>
+                                        <template if:true={sessionDetail.spotsAvailable}>
+                                            <button class="btn btn-success" 
+                                                    data-session-id={sessionDetail.session.Id} 
+                                                    onclick={handleRegister}>
+                                                Register
+                                            </button>
+                                        </template>
+                                        <template if:false={sessionDetail.spotsAvailable}>
+                                            <button class="btn btn-disabled" disabled>
+                                                Session Full
+                                            </button>
+                                        </template>
+                                    </template>
+                                    <template if:true={sessionDetail.isUserRegistered}>
+                                        <button class="btn btn-warning" 
+                                                data-session-id={sessionDetail.session.Id} 
+                                                onclick={handleCancel}>
+                                            Cancel Registration
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <div class="session-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">
+                                        <lightning-icon icon-name="utility:event" size="xx-small"></lightning-icon>
+                                        Date & Time:
+                                    </span>
+                                    <span class="detail-value">
+                                        {sessionDetail.session.Session_Date__c} 
+                                        {sessionDetail.session.Start_Time__c} - {sessionDetail.session.End_Time__c}
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">
+                                        <lightning-icon icon-name="utility:location" size="xx-small"></lightning-icon>
+                                        Location:
+                                    </span>
+                                    <span class="detail-value">{sessionDetail.session.Location__c}</span>
+                                </div>
+                                <template if:true={sessionDetail.session.Session_Link__c}>
+                                    <div class="detail-row">
+                                        <span class="detail-label">
+                                            <lightning-icon icon-name="utility:link" size="xx-small"></lightning-icon>
+                                            Meeting Link:
+                                        </span>
+                                        <span class="detail-value">
+                                            <a href={sessionDetail.session.Session_Link__c} target="_blank" rel="noopener noreferrer" class="meeting-link">
+                                                Join Meeting
+                                            </a>
+                                        </span>
+                                    </div>
+                                </template>
+                                <div class="detail-row">
+                                    <span class="detail-label">
+                                        <lightning-icon icon-name="utility:user" size="xx-small"></lightning-icon>
+                                        Instructor:
+                                    </span>
+                                    <span class="detail-value">
+                                        <template if:true={sessionDetail.session.Instructor__r.Name}>
+                                            {sessionDetail.session.Instructor__r.Name}
+                                        </template>
+                                        <template if:false={sessionDetail.session.Instructor__r.Name}>
+                                            Not assigned
+                                        </template>
+                                    </span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">
+                                        <lightning-icon icon-name="utility:groups" size="xx-small"></lightning-icon>
+                                        Capacity:
+                                    </span>
+                                    <span class="detail-value">
+                                        {sessionDetail.attendeeCount} / {sessionDetail.session.Max_Attendees__c} 
+                                        ({sessionDetail.spotsAvailable} spots available)
+                                    </span>
+                                </div>
+                                <template if:true={sessionDetail.isUserRegistered}>
+                                    <template if:true={sessionDetail.session.Session_Link__c}>
+                                        <div class="detail-row">
+                                            <span class="detail-label">
+                                                <lightning-icon icon-name="utility:link" size="xx-small"></lightning-icon>
+                                                Meeting Link:
+                                            </span>
+                                            <span class="detail-value">
+                                                <a href={sessionDetail.session.Session_Link__c} target="_blank" rel="noopener noreferrer" class="meeting-link">
+                                                    Join Meeting
+                                                </a>
+                                            </span>
+                                        </div>
+                                    </template>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- My Training Tab -->
+        <template if:true={showMyTraining}>
+            <div class="tab-content">
+                <div class="section-header">
+                    <h2>My Training History</h2>
+                </div>
+                
+                <div class="training-history">
+                    <template for:each={attendance} for:item="record">
+                        <div key={record.Id} class="history-card">
+                            <div class="history-header">
+                                <h3 class="course-name">{record.Training_Session__r.Training_Course__r.Name}</h3>
+                                <span class={record.Attendance_Status__c}>{record.Attendance_Status__c}</span>
+                            </div>
+                            <div class="history-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Session:</span>
+                                    <span class="detail-value">{record.Training_Session__r.Name}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Date:</span>
+                                    <span class="detail-value">{record.Training_Session__r.Session_Date__c}</span>
+                                </div>
+                                <template if:true={record.Training_Session__r.Start_Time__c}>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Time:</span>
+                                        <span class="detail-value">{record.Training_Session__r.Start_Time__c} - {record.Training_Session__r.End_Time__c}</span>
+                                    </div>
+                                </template>
+                                <template if:true={record.Training_Session__r.Location__c}>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Location:</span>
+                                        <span class="detail-value">{record.Training_Session__r.Location__c}</span>
+                                    </div>
+                                </template>
+                                <template if:true={record.Training_Session__r.Session_Link__c}>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Meeting Link:</span>
+                                        <span class="detail-value">
+                                            <a href={record.Training_Session__r.Session_Link__c} target="_blank" rel="noopener noreferrer" class="meeting-link">
+                                                Join Meeting
+                                            </a>
+                                        </span>
+                                    </div>
+                                </template>
+                                <template if:true={record.Training_Session__r.Instructor__r.Name}>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Instructor:</span>
+                                        <span class="detail-value">{record.Training_Session__r.Instructor__r.Name}</span>
+                                    </div>
+                                </template>
+                                <template if:true={record.Certificate_Issued__c}>
+                                    <div class="certificate-indicator">
+                                        <lightning-icon icon-name="utility:success" size="x-small"></lightning-icon>
+                                        Certificate Issued
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <!-- Course Creation Modal -->
+        <template if:true={showCourseModal}>
+            <section class="modal-overlay">
+                <div class="modal-container">
+                    <header class="modal-header">
+                        <h2>Create New Course</h2>
+                        <button class="close-btn" onclick={handleCloseModal}>
+                            <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                        </button>
+                    </header>
+                    
+                    <div class="modal-body">
+                        <form class="course-form">
+                            <div class="form-group">
+                                <label class="form-label">Course Name</label>
+                                <input type="text" 
+                                       class="form-input" 
+                                       placeholder="Enter course name"
+                                       data-field="name"
+                                       value={newCourse.name}
+                                       onchange={handleCourseInputChange}
+                                       required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-textarea" 
+                                          placeholder="Enter course description"
+                                          data-field="description"
+                                          value={newCourse.description}
+                                          onchange={handleCourseInputChange}
+                                          required></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Duration (Hours)</label>
+                                    <input type="number" 
+                                           class="form-input" 
+                                           placeholder="0"
+                                           data-field="hours"
+                                           value={newCourse.hours}
+                                           onchange={handleCourseInputChange}
+                                           min="0.5"
+                                           step="0.5"
+                                           required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <lightning-combobox
+                                        name="category"
+                                        placeholder="Select category"
+                                        options={categoryOptions}
+                                        value={newCourse.category}
+                                        data-field="category"
+                                        onchange={handleCourseInputChange}
+                                        required>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <footer class="modal-footer">
+                        <button class="btn btn-secondary" onclick={handleCloseModal}>Cancel</button>
+                        <button class="btn btn-primary" onclick={handleSaveCourse}>Create Course</button>
+                    </footer>
+                </div>
+            </section>
+        </template>
+
+        <!-- Session Creation Modal -->
+        <template if:true={showSessionModal}>
+            <section class="modal-overlay">
+                <div class="modal-container">
+                    <header class="modal-header">
+                        <h2>Schedule New Session</h2>
+                        <button class="close-btn" onclick={handleCloseModal}>
+                            <lightning-icon icon-name="utility:close" size="small"></lightning-icon>
+                        </button>
+                    </header>
+                    
+                    <div class="modal-body">
+                        <form class="session-form">
+                            <div class="form-group">
+                                <label class="form-label">Course</label>
+                                <lightning-combobox
+                                    name="course"
+                                    placeholder="Select course"
+                                    options={courseOptions}
+                                    value={newSession.courseId}
+                                    data-field="courseId"
+                                    onchange={handleSessionInputChange}
+                                    required>
+                                </lightning-combobox>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Session Date</label>
+                                    <input type="date" 
+                                           class="form-input"
+                                           data-field="sessionDate"
+                                           value={newSession.sessionDate}
+                                           onchange={handleSessionInputChange}
+                                           required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Location</label>
+                                    <input type="text" 
+                                           class="form-input" 
+                                           placeholder="Room/Location"
+                                           data-field="location"
+                                           value={newSession.location}
+                                           onchange={handleSessionInputChange}
+                                           required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Start Time</label>
+                                    <input type="time" 
+                                           class="form-input"
+                                           data-field="startTime"
+                                           value={newSession.startTime}
+                                           onchange={handleSessionInputChange}
+                                           required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">End Time</label>
+                                    <input type="time" 
+                                           class="form-input"
+                                           data-field="endTime"
+                                           value={newSession.endTime}
+                                           onchange={handleSessionInputChange}
+                                           required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Max Attendees</label>
+                                    <input type="number" 
+                                           class="form-input" 
+                                           placeholder="0"
+                                           data-field="maxAttendees"
+                                           value={newSession.maxAttendees}
+                                           onchange={handleSessionInputChange}
+                                           min="1"
+                                           required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Instructor</label>
+                                    <lightning-combobox
+                                        name="instructor"
+                                        placeholder="Select instructor"
+                                        options={instructors}
+                                        value={newSession.instructorId}
+                                        data-field="instructorId"
+                                        onchange={handleSessionInputChange}
+                                        required>
+                                    </lightning-combobox>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Session Link (Optional)</label>
+                                <input type="url" 
+                                       class="form-input" 
+                                       placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                                       data-field="sessionLink"
+                                       value={newSession.sessionLink}
+                                       onchange={handleSessionInputChange}>
+                                <small class="form-help">Enter a meeting link for virtual sessions</small>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <footer class="modal-footer">
+                        <button class="btn btn-secondary" onclick={handleCloseModal}>Cancel</button>
+                        <button class="btn btn-primary" onclick={handleSaveSession}>Schedule Session</button>
+                    </footer>
+                </div>
+            </section>
+        </template>
+    </div>
+</template> 
