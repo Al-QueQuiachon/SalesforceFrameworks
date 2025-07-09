@@ -1,0 +1,606 @@
+<aura:component implements="flexipage:availableForAllPageTypes,forceCommunity:availableForAllPageTypes,forceCommunity:layout,forceCommunity:themeLayout" 
+                controller="nuvitekCustomThemeLayoutAuraController" access="global">
+    <!-- Facets for drag-and-drop functionality -->
+    <aura:attribute name="header" type="Aura.ComponentDefRef[]" access="global"/>
+    <aura:attribute name="footer" type="Aura.ComponentDefRef[]" access="global"/>
+    <aura:attribute name="heroMedia" type="Aura.ComponentDefRef[]" access="global"/>
+    <!-- Attributes -->
+    <!-- Base theme properties -->
+    <aura:attribute name="primaryColor" type="String" default="#22BDC1" access="global"/>
+    <aura:attribute name="accentColor" type="String" default="#D5DF23" access="global"/>
+    <aura:attribute name="textColor" type="String" default="#1d1d1f" access="global"/>
+    <aura:attribute name="themeName" type="String" default="light" access="global"/>
+    <aura:attribute name="heroBackgroundDarkness" type="Integer" default="30" access="global"/>
+    
+    <!-- Search attributes -->
+    <aura:attribute name="searchResults" type="List" default="[]"/>
+    <aura:attribute name="isSearching" type="Boolean" default="false"/>
+    <aura:attribute name="showSearchResults" type="Boolean" default="false"/>
+    <aura:attribute name="searchObjects" type="String" default="Account,Contact" access="global"/>
+    
+    <!-- Header options -->
+    <aura:attribute name="useDefaultHeader" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="headerNavigationMenuName" type="String" access="global"/>
+    <aura:attribute name="logoUrl" type="String" access="global"/>
+    <aura:attribute name="logoAltText" type="String" default="Nuvitek" access="global"/>
+    <aura:attribute name="showSearchInHeader" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="headerSticky" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="headerVariant" type="String" default="standard" access="global"/>
+    
+    <!-- Footer options -->
+    <aura:attribute name="useDefaultFooter" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="footerNavigationMenuName" type="String" access="global"/>
+    <aura:attribute name="footerStyle" type="String" default="standard" access="global"/>
+    <aura:attribute name="companyName" type="String" default="Nuvitek" access="global"/>
+    <aura:attribute name="footerTagline" type="String" default="Delivering innovative solutions since 2012" access="global"/>
+    <aura:attribute name="footerLegalText" type="String" default="All rights reserved. Terms and conditions apply." access="global"/>
+    
+    <!-- Dynamic Footer Columns -->
+    <aura:attribute name="footerColumnCount" type="Integer" default="3" access="global"/>
+    <aura:attribute name="footerColumnTitles" type="String" default="Products, Resources, Company" access="global"/>
+    <aura:attribute name="footerColumnMenus" type="String" default="" access="global"/>
+    
+    <!-- Dynamic Social Links -->
+    <aura:attribute name="socialLinksCount" type="Integer" default="0" access="global"/>
+    <aura:attribute name="socialLinkTitles" type="String" default="Facebook, Twitter, LinkedIn, Instagram" access="global"/>
+    <aura:attribute name="socialLinkUrls" type="String" default="" access="global"/>
+    
+    <!-- Hero section properties -->
+    <aura:attribute name="showHeroSection" type="Boolean" default="true" access="global"/>
+    <aura:attribute name="heroLayout" type="String" default="fullwidth" access="global"/>
+    <aura:attribute name="heroBackgroundImage" type="String" access="global"/>
+    <aura:attribute name="heroTitle" type="String" default="Experience the Future Today" access="global"/>
+    <aura:attribute name="heroSubtitle" type="String" default="Discover innovative solutions designed with you in mind" access="global"/>
+    <aura:attribute name="heroCTAPrimaryLabel" type="String" default="Get Started" access="global"/>
+    <aura:attribute name="heroCTAPrimaryUrl" type="String" access="global"/>
+    <aura:attribute name="heroCTASecondaryLabel" type="String" default="Learn More" access="global"/>
+    <aura:attribute name="heroCTASecondaryUrl" type="String" access="global"/>
+    
+    <!-- FAB control -->
+    <aura:attribute name="showFab" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="fabUrl" type="String" access="global"/>
+    <aura:attribute name="fabOptions" type="String" default="both" access="global"/>
+    <aura:attribute name="helpFormLabel" type="String" default="Help Request" access="global"/>
+    <aura:attribute name="aiAssistantLabel" type="String" default="AI Assistant" access="global"/>
+    <aura:attribute name="helpFormIcon" type="String" default="utility:chat" access="global"/>
+    <aura:attribute name="aiAssistantIcon" type="String" default="utility:einstein" access="global"/>
+    
+    <!-- Video background properties -->
+    <aura:attribute name="showBackgroundVideo" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="backgroundVideoUrl" type="String" access="global"/>
+    <aura:attribute name="backgroundVideoFallbackUrl" type="String" access="global"/>
+    <aura:attribute name="backgroundVideoDarkness" type="Integer" default="35" access="global"/>
+    
+    <!-- Theme control -->
+    <aura:attribute name="applyThemeToSlots" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="globalThemeOverride" type="Boolean" default="false" access="global"/>
+    
+    <!-- Reactive state tracking -->
+    <aura:attribute name="scrolled" type="Boolean" default="false"/>
+    <aura:attribute name="mobileMenuOpen" type="Boolean" default="false"/>
+    <aura:attribute name="helpFormOpen" type="Boolean" default="false"/>
+    <aura:attribute name="fabMenuOpen" type="Boolean" default="false"/>
+    <aura:attribute name="llmAssistantOpen" type="Boolean" default="false"/>
+    
+    <!-- Navigation data -->
+    <aura:attribute name="headerNavItems" type="List" default="[]"/>
+    <aura:attribute name="footerNavItems" type="List" default="[]"/>
+    <aura:attribute name="isHeaderNavLoaded" type="Boolean" default="false"/>
+    <aura:attribute name="isFooterNavLoaded" type="Boolean" default="false"/>
+    
+    <!-- Additional properties -->
+    <aura:attribute name="headerContainerWidth" type="Integer" default="100" access="global"/>
+    <aura:attribute name="showProfileIcon" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="profilePageUrl" type="String" default="/profile" access="global"/>
+    <aura:attribute name="ensureHomeNavItem" type="Boolean" default="false" access="global"/>
+    <aura:attribute name="showFaqSection" type="Boolean" default="false" access="global"/>
+    
+    <!-- Test property for identification -->
+    <aura:attribute name="test" type="String" default="Aura Version - Theme Layout" access="global"/>
+    
+    <!-- Current year for footer -->
+    <aura:attribute name="currentYear" type="Integer"/>
+    
+    <!-- Computed properties as attributes -->
+    <aura:attribute name="themeClass" type="String"/>
+    <aura:attribute name="themeStyle" type="String"/>
+    <aura:attribute name="headerClass" type="String"/>
+    <aura:attribute name="headerStyle" type="String"/>
+    <aura:attribute name="heroSectionClass" type="String"/>
+    <aura:attribute name="heroBackgroundStyle" type="String"/>
+    <aura:attribute name="heroOverlayStyle" type="String"/>
+    <aura:attribute name="heroSubtitleStyle" type="String"/>
+    <aura:attribute name="videoOverlayStyle" type="String"/>
+    <aura:attribute name="resolvedVideoUrl" type="String"/>
+    <aura:attribute name="footerClass" type="String"/>
+    <aura:attribute name="scrollIndicatorClass" type="String"/>
+    <aura:attribute name="mobileMenuButtonClass" type="String"/>
+    <aura:attribute name="mobileMenuClass" type="String"/>
+    <aura:attribute name="fabMenuClass" type="String"/>
+    <aura:attribute name="helpFormDialogClass" type="String"/>
+    <aura:attribute name="llmAssistantDialogClass" type="String"/>
+    <aura:attribute name="backdropClass" type="String"/>
+    <aura:attribute name="logoStyle" type="String"/>
+    <aura:attribute name="headerContainerStyle" type="String"/>
+    <aura:attribute name="shouldShowHeader" type="Boolean" default="false"/>
+    <aura:attribute name="isHeroSplit" type="Boolean" default="false"/>
+    <aura:attribute name="isHeroFullscreen" type="Boolean" default="false"/>
+    <aura:attribute name="isMinimalFooter" type="Boolean" default="false"/>
+    <aura:attribute name="shouldShowFooterColumns" type="Boolean" default="false"/>
+    <aura:attribute name="footerColumnsStyle" type="String"/>
+    <aura:attribute name="footerColumnsWithItems" type="List" default="[]"/>
+    <aura:attribute name="socialLinks" type="List" default="[]"/>
+    
+    <!-- Handlers -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!-- Main Template -->
+    <div class="{!v.themeClass}" style="{!v.themeStyle}">
+        <!-- Test Identifier -->
+        <div style="position: fixed; top: 10px; right: 10px; background: var(--primary-color); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 9999; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            {!v.test}
+        </div>
+        
+        <!-- Header Section with improved layout -->
+        <header data-f6-region="true" class="{!v.headerClass}" style="{!v.headerStyle}">
+            <!-- Default header content shown only when useDefaultHeader is true AND there's content -->
+            <aura:if isTrue="{!v.shouldShowHeader}">
+                <div class="header-container" style="{!v.headerContainerStyle}">
+                    <div class="header-content-inner">
+                        <!-- Only render header-left div if logoUrl exists -->
+                        <aura:if isTrue="{!not(empty(v.logoUrl))}">
+                            <div class="header-left">
+                                <div class="logo-container">
+                                    <a href="/" class="logo" style="{!v.logoStyle}" aria-label="{!v.logoAltText}">
+                                        <span class="logo-text">{!v.logoAltText}</span>
+                                    </a>
+                                </div>
+
+                                <!-- Mobile menu toggle -->
+                                <div class="{!v.mobileMenuButtonClass}" onclick="{!c.toggleMobileMenu}" aria-label="Toggle menu"
+                                    role="button" tabindex="0">
+                                    <span class="hamburger-line line1"></span>
+                                    <span class="hamburger-line line2"></span>
+                                    <span class="hamburger-line line3"></span>
+                                </div>
+                            </div>
+                        </aura:if>
+
+                        <!-- If no logoUrl, place mobile menu toggle elsewhere -->
+                        <aura:if isTrue="{!empty(v.logoUrl)}">
+                            <div class="mobile-menu-only">
+                                <div class="{!v.mobileMenuButtonClass}" onclick="{!c.toggleMobileMenu}" aria-label="Toggle menu"
+                                    role="button" tabindex="0">
+                                    <span class="hamburger-line line1"></span>
+                                    <span class="hamburger-line line2"></span>
+                                    <span class="hamburger-line line3"></span>
+                                </div>
+                            </div>
+                        </aura:if>
+
+                        <!-- Header Center: Navigation -->
+                        <div class="header-center">
+                            <aura:if isTrue="{!v.isHeaderNavLoaded}">
+                                <nav class="navigation desktop-nav" aria-label="Main Navigation">
+                                    <aura:iteration items="{!v.headerNavItems}" var="navItem">
+                                        <div class="nav-item-container">
+                                            <a href="{!navItem.target}" class="{!navItem.activeClass}"
+                                                data-target="{!navItem.target}" data-type="{!navItem.type}"
+                                                onclick="{!c.handleNavItemClick}" aria-current="{!navItem.ariaCurrent}"
+                                                aria-expanded="{!navItem.hasChildren}" aria-haspopup="{!navItem.hasChildren}">
+                                                <aura:if isTrue="{!not(empty(navItem.imageUrl))}">
+                                                    <img src="{!navItem.imageUrl}" alt="" class="nav-item-icon"
+                                                        aria-hidden="true" />
+                                                </aura:if>
+                                                <span>{!navItem.label}</span>
+                                                <aura:if isTrue="{!navItem.hasChildren}">
+                                                    <span class="dropdown-indicator-svg" data-icon="chevron-down"></span>
+                                                </aura:if>
+                                            </a>
+
+                                            <!-- Dropdown menu -->
+                                            <aura:if isTrue="{!navItem.hasChildren}">
+                                                <div class="nav-dropdown" role="menu">
+                                                    <aura:iteration items="{!navItem.children}" var="childItem">
+                                                        <a href="{!childItem.target}"
+                                                            class="{!childItem.activeClass}" data-target="{!childItem.target}"
+                                                            data-type="{!childItem.type}" onclick="{!c.handleNavItemClick}"
+                                                            aria-current="{!childItem.ariaCurrent}" role="menuitem">
+                                                            <aura:if isTrue="{!not(empty(childItem.imageUrl))}">
+                                                                <img src="{!childItem.imageUrl}" alt=""
+                                                                    class="nav-item-icon" aria-hidden="true" />
+                                                            </aura:if>
+                                                            <span>{!childItem.label}</span>
+                                                        </a>
+                                                    </aura:iteration>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:iteration>
+                                </nav>
+                            </aura:if>
+                        </div>
+
+                        <!-- Header Right: Search and Profile -->
+                        <div class="header-right">
+                            <!-- Optional search in header -->
+                            <aura:if isTrue="{!v.showSearchInHeader}">
+                                <!-- Update the search input section -->
+                                <div class="header-search">
+                                    <input type="text" placeholder="Search..." class="search-input"
+                                        aura:id="searchInput" aria-label="Search" onkeyup="{!c.handleSearchKeyup}" />
+                                    <button class="search-button" onclick="{!c.handleSearch}" aria-label="Submit search">
+                                        <span class="search-icon-svg" data-icon="search"></span>
+                                    </button>
+                                    
+                                    <!-- Search Results Dropdown -->
+                                    <aura:if isTrue="{!v.showSearchResults}">
+                                        <div class="search-results-dropdown">
+                                            <aura:if isTrue="{!v.isSearching}">
+                                                <div class="search-loading">
+                                                    <div class="search-loading-spinner"></div>
+                                                    <span>Searching...</span>
+                                                </div>
+                                            </aura:if>
+                                            
+                                            <aura:if isTrue="{!not(v.isSearching)}">
+                                                <div class="search-results-list">
+                                                    <aura:if isTrue="{!v.searchResults.length > 0}">
+                                                        <aura:iteration items="{!v.searchResults}" var="result">
+                                                            <div class="search-result-item" 
+                                                                onclick="{!c.handleResultClick}" 
+                                                                data-id="{!result.id}" 
+                                                                data-object-type="{!result.objectType}">
+                                                                <div class="result-icon" data-object-type="{!result.objectType}"></div>
+                                                                <div class="result-details">
+                                                                    <div class="result-name">{!result.name}</div>
+                                                                    <div class="result-type">{!result.objectType}</div>
+                                                                </div>
+                                                            </div>
+                                                        </aura:iteration>
+                                                    </aura:if>
+                                                    
+                                                    <aura:if isTrue="{!v.searchResults.length == 0}">
+                                                        <div class="no-results">
+                                                            No results found.
+                                                        </div>
+                                                    </aura:if>
+                                                    
+                                                    <div class="search-results-footer">
+                                                        <button class="close-results-btn" onclick="{!c.closeSearchResults}">Close</button>
+                                                    </div>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </aura:if>
+
+                            <!-- Profile icon link -->
+                            <aura:if isTrue="{!v.showProfileIcon}">
+                                <a href="{!v.profilePageUrl}" class="profile-icon" aria-label="View profile">
+                                    <span class="profile-icon-svg" data-icon="user"></span>
+                                </a>
+                            </aura:if>
+                        </div>
+
+                        <!-- Mobile menu -->
+                        <div class="{!v.mobileMenuClass}">
+                            <!-- Mobile menu content -->
+                            <nav class="mobile-nav">
+                                <aura:iteration items="{!v.headerNavItems}" var="navItem">
+                                    <div class="mobile-nav-item-container">
+                                        <a href="{!navItem.target}" class="mobile-nav-item" data-target="{!navItem.target}"
+                                            data-type="{!navItem.type}" onclick="{!c.handleNavItemClick}"
+                                            aria-current="{!navItem.ariaCurrent}">
+                                            <aura:if isTrue="{!not(empty(navItem.imageUrl))}">
+                                                <img src="{!navItem.imageUrl}" alt="" class="nav-item-icon"
+                                                    aria-hidden="true" />
+                                            </aura:if>
+                                            <span>{!navItem.label}</span>
+                                        </a>
+
+                                        <!-- Mobile dropdown submenu -->
+                                        <aura:if isTrue="{!navItem.hasChildren}">
+                                            <div class="mobile-nav-dropdown">
+                                                <aura:iteration items="{!navItem.children}" var="childItem">
+                                                    <a href="{!childItem.target}"
+                                                        class="mobile-nav-dropdown-item" data-target="{!childItem.target}"
+                                                        data-type="{!childItem.type}" onclick="{!c.handleNavItemClick}"
+                                                        aria-current="{!childItem.ariaCurrent}">
+                                                        <span>{!childItem.label}</span>
+                                                    </a>
+                                                </aura:iteration>
+                                            </div>
+                                        </aura:if>
+                                    </div>
+                                                                  </aura:iteration>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!not(v.useDefaultHeader)}">
+                <div class="nuvitek-themed-header">
+                    {!v.header}
+                </div>
+            </aura:if>
+        </header>
+
+        <!-- Hero Section with layout options -->
+        <aura:if isTrue="{!v.showHeroSection}">
+            <div class="{!v.heroSectionClass}" style="{!v.heroBackgroundStyle}">
+                <!-- Background video container -->
+                <aura:if isTrue="{!v.showBackgroundVideo}">
+                    <div class="hero-video-container">
+                        <aura:if isTrue="{!not(empty(v.backgroundVideoUrl))}">
+                            <video class="hero-background-video" autoplay="autoplay" loop="loop" muted="muted" poster="{!v.backgroundVideoFallbackUrl}">
+                                <source src="{!v.resolvedVideoUrl}" type="video/mp4"/>
+                            </video>
+                            <div class="hero-video-overlay" style="{!v.videoOverlayStyle}"></div>
+                        </aura:if>
+                    </div>
+                </aura:if>
+
+                <!-- Regular background overlay (shown when no video) -->
+                <aura:if isTrue="{!not(v.showBackgroundVideo)}">
+                    <div class="hero-overlay" style="{!v.heroOverlayStyle}"></div>
+                </aura:if>
+
+                <div class="hero-container">
+                    <div class="hero-content">
+                        <!-- Update the hero title and subtitle in the HTML -->
+                        <h1 class="hero-title" aria-label="{!v.heroTitle}">
+                            <span class="hero-title-text">{!v.heroTitle}</span>
+                        </h1>
+                        <p class="hero-subtitle" style="{!v.heroSubtitleStyle}">{!v.heroSubtitle}</p>
+                        <div class="hero-cta">
+                            <aura:if isTrue="{!not(empty(v.heroCTAPrimaryLabel))}">
+                                <a href="{!v.heroCTAPrimaryUrl}" class="cta-button primary">
+                                    <span class="button-text">{!v.heroCTAPrimaryLabel}</span>
+                                    <span class="button-icon">
+                                        <span class="cta-icon-svg" data-icon="arrow-right"></span>
+                                    </span>
+                                </a>
+                            </aura:if>
+                            <aura:if isTrue="{!not(empty(v.heroCTASecondaryLabel))}">
+                                <a href="{!v.heroCTASecondaryUrl}" class="cta-button secondary">
+                                    <span class="button-text">{!v.heroCTASecondaryLabel}</span>
+                                </a>
+                            </aura:if>
+                        </div>
+                    </div>
+
+                    <!-- Hero media (for split layout) -->
+                    <aura:if isTrue="{!v.isHeroSplit}">
+                        <div class="hero-media">
+                            <div class="nuvitek-themed-component">
+                                {!v.heroMedia}
+                            </div>
+                            <!-- Default media placeholder if no content provided -->
+                            <aura:if isTrue="{!empty(v.heroMedia)}">
+                                <div class="media-placeholder">
+                                    <div class="placeholder-content">
+                                        <div class="placeholder-circle"></div>
+                                        <div class="placeholder-lines">
+                                            <div class="placeholder-line"></div>
+                                            <div class="placeholder-line"></div>
+                                            <div class="placeholder-line"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:if>
+                        </div>
+                    </aura:if>
+                </div>
+
+                <!-- Scroll indicator for full-screen hero -->
+                <aura:if isTrue="{!v.isHeroFullscreen}">
+                    <div class="{!v.scrollIndicatorClass}" onclick="{!c.handleScrollDown}">
+                        <div class="scroll-icon">
+                            <span class="scroll-icon-svg" data-icon="chevron-down"></span>
+                        </div>
+                    </div>
+                </aura:if>
+            </div>
+        </aura:if>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="content-container">
+                <div class="nuvitek-themed-component">
+                    {!v.body}
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div data-f6-region="true" class="{!v.footerClass}">
+            <aura:if isTrue="{!v.useDefaultFooter}">
+                <!-- For minimal style, only show the bottom section -->
+                <aura:if isTrue="{!v.isMinimalFooter}">
+                    <div class="footer-container">
+                        <div class="footer-bottom">
+                            <div class="footer-legal">
+                                <p class="copyright">&copy; {!v.currentYear} {!v.companyName}. {!v.footerLegalText}</p>
+                                <p class="footer-tagline-bottom">{!v.footerTagline}</p>
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+
+                <aura:if isTrue="{!not(v.isMinimalFooter)}">
+                    <div class="footer-container">
+                        <!-- Footer top section with columns -->
+                        <div class="footer-top">
+                            <div class="footer-columns" style="{!v.footerColumnsStyle}">
+                                <!-- Show different layouts based on footer style -->
+                                <aura:if isTrue="{!v.shouldShowFooterColumns}">
+                                    <!-- Multi-column layout for expanded and multi-column styles -->
+                                    <aura:iteration items="{!v.footerColumnsWithItems}" var="column">
+                                        <div class="footer-column">
+                                            <h3 class="footer-column-title">{!column.title}</h3>
+                                            <div class="footer-nav-container">
+                                                <aura:if isTrue="{!v.isFooterNavLoaded}">
+                                                    <aura:iteration items="{!column.items}" var="navItem">
+                                                        <a href="{!navItem.target}"
+                                                            class="footer-nav-item" data-target="{!navItem.target}"
+                                                            data-type="{!navItem.type}" onclick="{!c.handleNavItemClick}">
+                                                            {!navItem.label}
+                                                        </a>
+                                                    </aura:iteration>
+                                                </aura:if>
+                                            </div>
+                                        </div>
+                                    </aura:iteration>
+                                </aura:if>
+
+                                <aura:if isTrue="{!not(v.shouldShowFooterColumns)}">
+                                    <!-- Simplified layout for minimal and standard styles -->
+                                    <div class="footer-nav-simplified">
+                                        <aura:if isTrue="{!v.isFooterNavLoaded}">
+                                            <aura:iteration items="{!v.footerNavItems}" var="navItem">
+                                                <a href="{!navItem.target}" class="footer-nav-item"
+                                                    data-target="{!navItem.target}" data-type="{!navItem.type}"
+                                                    onclick="{!c.handleNavItemClick}">
+                                                    {!navItem.label}
+                                                </a>
+                                            </aura:iteration>
+                                        </aura:if>
+                                    </div>
+                                </aura:if>
+
+                                <!-- Always show about column -->
+                                <div class="footer-column footer-about">
+                                    <div class="footer-logo-container">
+                                        <a href="/" class="footer-logo" style="{!v.logoStyle}" aria-label="{!v.logoAltText}">
+                                            <span class="logo-text">{!v.logoAltText}</span>
+                                        </a>
+                                    </div>
+
+                                    <!-- Dynamic Social Links -->
+                                    <aura:if isTrue="{!v.socialLinks.length > 0}">
+                                        <div class="social-links">
+                                            <aura:iteration items="{!v.socialLinks}" var="socialLink">
+                                                <a href="{!socialLink.url}" class="social-link"
+                                                    aria-label="{!socialLink.title}" target="_blank" rel="noopener"
+                                                    data-icon-type="{!socialLink.iconType}">
+                                                    <!-- Dynamic Lightning icon based on social media type -->
+                                                    <aura:if isTrue="{!socialLink.isFacebook}">
+                                                        <lightning:icon iconName="utility:socialshare" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isTwitter}">
+                                                        <lightning:icon iconName="utility:socialshare" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isLinkedIn}">
+                                                        <lightning:icon iconName="utility:socialshare" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isInstagram}">
+                                                        <lightning:icon iconName="utility:socialshare" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isYoutube}">
+                                                        <lightning:icon iconName="utility:video" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isPinterest}">
+                                                        <lightning:icon iconName="utility:socialshare" size="small"/>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!socialLink.isGeneric}">
+                                                        <lightning:icon iconName="utility:world" size="small"/>
+                                                    </aura:if>
+                                                </a>
+                                            </aura:iteration>
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="footer-bottom">
+                            <div class="footer-legal">
+                                <p class="copyright">&copy; {!v.currentYear} {!v.companyName}. {!v.footerLegalText}</p>
+                                <p class="footer-tagline-bottom">{!v.footerTagline}</p>
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+            </aura:if>
+
+            <aura:if isTrue="{!not(v.useDefaultFooter)}">
+                <div class="nuvitek-themed-footer">
+                    {!v.footer}
+                </div>
+            </aura:if>
+        </div>
+
+        <!-- Floating action button with options -->
+        <aura:if isTrue="{!v.showFab}">
+            <div class="fab">
+                <button class="fab-button" aria-label="Options" onclick="{!c.handleFabClick}">
+                    <span class="fab-icon-svg" data-icon="plus"></span>
+                </button>
+                
+                <!-- FAB Menu Options -->
+                <aura:if isTrue="{!and(v.fabOptions != 'url_link', v.fabMenuOpen)}">
+                    <div class="{!v.fabMenuClass}">
+                        <!-- Help Request Option -->
+                        <aura:if isTrue="{!or(v.fabOptions == 'both', v.fabOptions == 'help_form')}">
+                            <div class="fab-menu-item">
+                                <span class="fab-menu-label">{!v.helpFormLabel}</span>
+                                <button class="fab-menu-button" onclick="{!c.toggleHelpForm}" aria-label="{!v.helpFormLabel}">
+                                    <span class="fab-menu-icon-svg" data-icon="chat"></span>
+                                </button>
+                            </div>
+                        </aura:if>
+                        
+                        <!-- AI Assistant Option -->
+                        <aura:if isTrue="{!or(v.fabOptions == 'both', v.fabOptions == 'ai_assistant')}">
+                            <div class="fab-menu-item">
+                                <span class="fab-menu-label">{!v.aiAssistantLabel}</span>
+                                <button class="fab-menu-button" onclick="{!c.toggleLlmAssistant}" aria-label="{!v.aiAssistantLabel}">
+                                    <span class="fab-menu-icon-svg" data-icon="einstein"></span>
+                                </button>
+                            </div>
+                        </aura:if>
+                    </div>
+                </aura:if>
+
+                <!-- Help Form Dialog -->
+                <div class="{!v.helpFormDialogClass}">
+                    <div class="support-requester-content">
+                        <!-- The support requester LWC component -->
+                        <c:supportRequester
+                            primaryColor="{!v.primaryColor}"
+                            accentColor="{!v.accentColor}"
+                            useDarkTheme="{!v.themeName == 'dark'}"
+                            layoutOrientation="vertical"
+                            componentTitle="{!v.helpFormLabel}"
+                            showFaqSection="{!v.showFaqSection}">
+                        </c:supportRequester>
+                    </div>
+                    <!-- Add close button to top right corner -->
+                    <button class="dialog-close-button" onclick="{!c.toggleHelpForm}">
+                        <lightning:icon iconName="utility:close" size="small"/>
+                    </button>
+                </div>
+                
+                <!-- LLM Assistant Dialog -->
+                <div class="{!v.llmAssistantDialogClass}">
+                    <div class="help-form-dialog-header">
+                        <h2 class="help-form-title">AI Assistant</h2>
+                        <button class="help-form-close" onclick="{!c.toggleLlmAssistant}">
+                            <lightning:icon iconName="utility:close" size="small"/>
+                        </button>
+                    </div>
+                    <div class="help-form-content llm-assistant-container">
+                        <!-- LLM Assistant component is loaded here -->
+                        <c:llmAssistant primaryColor="{!v.primaryColor}" accentColor="{!v.accentColor}"></c:llmAssistant>
+                    </div>
+                </div>
+
+                <!-- Overlay backdrop when dialogs are open -->
+                <div class="{!v.backdropClass}" onclick="{!c.closeAllDialogs}"></div>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

@@ -1,0 +1,37 @@
+<aura:documentation>
+    <aura:description>
+        <p>The <code>nuvitekCustomThemeLayoutAura</code> component provides a customizable theme layout for Salesforce applications. It includes a header, main content area, and footer with configurable colors, fonts, and visibility options.</p>
+        
+        <h3>Features:</h3>
+        <ul>
+            <li>Customizable color scheme (background, primary, and secondary colors)</li>
+            <li>Configurable header and footer visibility</li>
+            <li>Responsive design that works on desktop and mobile</li>
+            <li>Navigation menu with customizable links</li>
+            <li>Dynamic theme updates without page reload</li>
+            <li>User preference saving (requires Apex controller)</li>
+        </ul>
+        
+        <h3>Usage:</h3>
+        <p>Add this component to your Lightning page or community page and configure the attributes through the Lightning App Builder.</p>
+        
+        <pre><code>&lt;c:nuvitekCustomThemeLayoutAura 
+    backgroundColor="#f4f6f9"
+    primaryColor="#0070d2"
+    secondaryColor="#16325c"
+    showHeader="true"
+    showFooter="true"&gt;
+    
+    &lt;!-- Your content goes here --&gt;
+    &lt;div&gt;
+        &lt;h1&gt;Welcome to My App&lt;/h1&gt;
+        &lt;p&gt;This content will be wrapped in the custom theme layout.&lt;/p&gt;
+    &lt;/div&gt;
+    
+&lt;/c:nuvitekCustomThemeLayoutAura&gt;</code></pre>
+    </aura:description>
+    
+    <aura:example name="BasicExample" ref="c:nuvitekCustomThemeLayoutExample" label="Basic Theme Layout">
+        <p>This example shows a basic implementation of the theme layout with default settings.</p>
+    </aura:example>
+</aura:documentation>
