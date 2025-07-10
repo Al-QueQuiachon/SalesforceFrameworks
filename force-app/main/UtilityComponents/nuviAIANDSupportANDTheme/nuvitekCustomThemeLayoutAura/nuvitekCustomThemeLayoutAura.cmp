@@ -93,10 +93,10 @@
     <aura:attribute name="showProfileIcon" type="Boolean" default="false" access="global"/>
     <aura:attribute name="profilePageUrl" type="String" default="/profile" access="global"/>
     <aura:attribute name="ensureHomeNavItem" type="Boolean" default="false" access="global"/>
-    <aura:attribute name="showFaqSection" type="Boolean" default="false" access="global"/>
+        <aura:attribute name="showFaqSection" type="Boolean" default="false" access="global"/>
     
-    <!-- Test property for identification -->
-    <aura:attribute name="test" type="String" default="Aura Version - Theme Layout" access="global"/>
+    <!-- Test property for identification (required by Lightning Page interface) -->
+    <aura:attribute name="test" type="String" default="" access="global"/>
     
     <!-- Current year for footer -->
     <aura:attribute name="currentYear" type="Integer"/>
@@ -136,10 +136,7 @@
     
     <!-- Main Template -->
     <div class="{!v.themeClass}" style="{!v.themeStyle}">
-        <!-- Test Identifier -->
-        <div style="position: fixed; top: 10px; right: 10px; background: var(--primary-color); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; z-index: 9999; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-            {!v.test}
-        </div>
+
         
         <!-- Header Section with improved layout -->
         <header data-f6-region="true" class="{!v.headerClass}" style="{!v.headerStyle}">

@@ -23,8 +23,8 @@
     <design:attribute name="ensureHomeNavItem" label="Ensure Home Nav Item" description="Automatically add Home as first nav item if not present" default="false"/>
     <design:attribute name="showFaqSection" label="Show FAQ Section" description="Display FAQ section" default="false"/>
     
-    <!-- Test property for identification -->
-    <design:attribute name="test" label="Test/Identification" description="Test property to identify component version" default="Aura Version - Theme Layout"/>
+    <!-- Test property for identification (hidden) -->
+    <design:attribute name="test" label="Test Identifier" description="Component identifier (leave empty)" default=""/>
     
     <!-- Footer options -->
     <design:attribute name="useDefaultFooter" label="Use Default Footer" description="Use the built-in footer" default="false"/>

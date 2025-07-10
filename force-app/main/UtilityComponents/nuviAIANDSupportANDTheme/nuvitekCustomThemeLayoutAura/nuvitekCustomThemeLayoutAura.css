@@ -156,8 +156,6 @@
 
 /* ===== HEADER STYLES ===== */
 .THIS .site-header {
-    background-color: var(--primary-color);
-    filter: brightness(0.9);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     position: relative;
     z-index: 100;
@@ -168,6 +166,11 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Light theme header background - only when not in dark theme */
+.THIS .nuvitek-theme:not(.theme-dark) .site-header {
+    background-color: #ffffff;
+}
+
 .THIS .site-header.scrolled {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     backdrop-filter: blur(10px);
@@ -176,13 +179,29 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.THIS .theme-dark .site-header {
-    background-color: var(--header-darkness, rgba(29, 29, 31, 0.95));
+/* Override any external CSS that might be setting white background */
+.THIS .theme-dark .site-header,
+.THIS .theme-dark .cNuvitekCustomThemeLayoutAura .site-header,
+.cNuvitekCustomThemeLayoutAura .theme-dark .site-header,
+.THIS .cNuvitekCustomThemeLayoutAura .theme-dark .site-header {
+    background-color: #1d1d1f !important;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
-.THIS .theme-dark .site-header.scrolled {
-    background-color: var(--header-darkness-scrolled, rgba(32, 32, 36, 0.92));
+/* Force override the base white background rule */
+.THIS .cNuvitekCustomThemeLayoutAura .theme-dark .site-header {
+    background-color: #1d1d1f !important;
+}
+
+/* Direct override of the conflicting rule */
+.cNuvitekCustomThemeLayoutAura .theme-dark .site-header {
+    background-color: #1d1d1f !important;
+}
+
+.THIS .theme-dark .site-header.scrolled,
+.THIS .theme-dark .cNuvitekCustomThemeLayoutAura .site-header.scrolled,
+.cNuvitekCustomThemeLayoutAura .theme-dark .site-header.scrolled {
+    background-color: #2d2d2f !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -248,7 +267,7 @@
     width: 120px;
     height: 40px;
     font-weight: 700;
-    color: #ffffff;
+    color: #1d1d1f;
     font-size: 24px;
     transition: transform 0.3s ease, opacity 0.2s ease;
     -webkit-font-smoothing: antialiased;
@@ -287,8 +306,8 @@
     border-radius: 24px;
     font-weight: 600;
     font-size: 16px;
-    color: #ffffff !important;
-    /* Force white text on colored background */
+    color: #1d1d1f !important;
+    /* Force dark text on white background */
     transition: all 0.25s ease;
     position: relative;
     z-index: 2;
@@ -309,6 +328,45 @@
     color: #ffffff !important;
     /* Force white on hover in dark mode */
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Dark theme logo */
+.THIS .theme-dark .logo {
+    color: #ffffff !important;
+}
+
+/* Dark theme search input */
+.THIS .theme-dark .search-input {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.THIS .theme-dark .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.THIS .theme-dark .search-input:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Dark theme search button */
+.THIS .theme-dark .search-button {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark theme profile icon */
+.THIS .theme-dark .profile-icon {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.THIS .theme-dark .profile-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
 }
 
 .THIS .nav-item:hover {
@@ -461,6 +519,11 @@
     background-color: var(--text-color);
     border-radius: 4px;
     transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+/* Dark theme hamburger lines */
+.THIS .theme-dark .hamburger-line {
+    background-color: #ffffff;
 }
 
 .THIS .line1 {
@@ -652,9 +715,9 @@
 .THIS .search-input {
     padding: 10px 16px 10px 42px;
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1d1d1f;
     font-size: 15px;
     width: 240px;
     transition: all 0.3s ease;
@@ -669,9 +732,9 @@
 
 .THIS .search-input:focus {
     outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
-    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
 }
 
@@ -689,7 +752,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(0, 0, 0, 0.6);
     cursor: pointer;
 }
 
@@ -701,16 +764,16 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1d1d1f;
     transition: all 0.3s ease;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .THIS .profile-icon:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #1d1d1f;
     transform: translateY(-2px);
 }
 
