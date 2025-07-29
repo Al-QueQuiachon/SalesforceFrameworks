@@ -1,0 +1,690 @@
+<template>
+    <div style={componentStyle} data-flow-context={conversationOutput}>
+        <lightning-card>
+            <!-- Title Section - Keep as is -->
+            <div slot="title">
+                <div class="title-container">
+                    <div class="title-left">
+                        <lightning-icon icon-name="standard:bot" size="small" class="slds-m-right_small bot-icon"></lightning-icon>
+                        <span class="title-text">{cardTitle}</span>
+                    </div>
+                    <div class="title-spacer"></div>
+                    <div class="title-right" if:true={recordId}>
+                        <span class="scan-badge" if:true={pageComponentsScanned}>
+                            <lightning-icon icon-name="utility:success" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                            Page scanned
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+                
+                <!-- == Anomaly Detection Sections - Only show if enabled == -->
+                <template if:true={enableAnomalyDetection}>
+                    <!-- == Anomaly Check Loading Spinner == -->
+                    <div if:true={anomalyCheckLoading} class="slds-is-relative slds-m-bottom_small slds-text-align_center" style="height: 2rem;">
+                        <lightning-spinner alternative-text="Checking for anomalies..." size="small"></lightning-spinner>
+                        <span class="slds-text-body_small slds-text-color_weak slds-m-left_small">Checking for potential issues...</span>
+                    </div>
+                    <!-- == End Anomaly Check Loading Spinner == -->
+
+                    <!-- == Anomaly Check Accordion == -->
+                    <template if:true={showAnomalyBanner}>
+                        <lightning-accordion 
+                            allow-multiple-sections-open 
+                            active-section-name={activeAccordionSections} 
+                            class="slds-m-bottom_medium anomaly-accordion"
+                        >
+                            <lightning-accordion-section 
+                                name="anomalySection" 
+                                label="Potential Issues Detected"
+                                class="slds-theme_warning"
+                            >
+                                <div class="slds-p-horizontal_small slds-p-bottom_small accordion-content">
+                                    <!-- Use rich text to format the message -->
+                                    <lightning-formatted-rich-text value={anomalyBannerMessage}></lightning-formatted-rich-text>
+                                </div>
+                            </lightning-accordion-section>
+                        </lightning-accordion>
+                    </template>
+                    <!-- == End Anomaly Check Accordion == -->
+                </template>
+                <!-- == End Anomaly Detection Sections == -->
+                
+                <!-- == Comparison Feature Sections - Only show if enabled == -->
+                <template if:true={enableComparison}>
+                    <!-- == Comparison Check Loading Spinner == -->
+                    <div if:true={comparisonCheckLoading} class="slds-is-relative slds-m-bottom_small slds-text-align_center" style="height: 2rem;">
+                        <lightning-spinner alternative-text="Performing comparison..." size="small"></lightning-spinner>
+                        <span class="slds-text-body_small slds-text-color_weak slds-m-left_small">Comparing against standards...</span>
+                    </div>
+                    <!-- == End Comparison Check Loading Spinner == -->
+
+                    <!-- == Comparison Result Accordion == -->
+                    <template if:true={showComparisonBanner}>
+                        <lightning-accordion 
+                            allow-multiple-sections-open 
+                            active-section-name={activeAccordionSections} 
+                            class="slds-m-bottom_medium comparison-accordion"
+                        >
+                            <lightning-accordion-section 
+                                name="comparisonSection" 
+                                label={comparisonAccordionLabel}
+                                class={comparisonAccordionClass}
+                            >
+                                <div class="slds-p-horizontal_small slds-p-bottom_small accordion-content">
+                                    <!-- Use rich text to format the detailed analysis -->
+                                    <lightning-formatted-rich-text value={comparisonDetailedResult}></lightning-formatted-rich-text>
+                                </div>
+                            </lightning-accordion-section>
+                        </lightning-accordion>
+                    </template>
+                    <!-- == End Comparison Result Accordion == -->
+                </template>
+                <!-- == End Comparison Feature Sections == -->
+                
+                <!-- Model selector remains the same -->
+                <template if:true={showModelSelector}>
+                    <lightning-combobox
+                        label="Select AI Model"
+                        options={llmOptions}
+                        value={selectedLLM}
+                        onchange={handleModelChange}
+                        class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </template>
+
+                <!-- PDF Processing Spinner and Error -->
+                <template if:true={isProcessingPdf}>
+                    <div class="enhanced-loading-container slds-m-vertical_medium">
+                        <div class="loading-content">
+                            <!-- <div class="spinner-container">
+                                <lightning-spinner alternative-text="Analyzing PDF..." size="medium" class="enhanced-spinner"></lightning-spinner>
+                                <div class="pulse-ring"></div>
+                            </div> -->
+                            <div class="loading-info">
+                                <p class="loading-text">Analyzing PDF, please wait...</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                    </div>
+                                    <span class="progress-text">Processing document...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template if:true={pdfProcessingError}>
+                    <div class="error-container slds-text-color_error slds-m-vertical_small slds-p-around_small slds-border_left slds-border_red slds-border_left-4" role="alert">
+                        <lightning-icon icon-name="utility:error" alternative-text="Error" size="small" class="slds-m-right_small"></lightning-icon>
+                        <strong>PDF Analysis Error:</strong> {pdfProcessingError}
+                    </div>
+                </template>
+
+                <!-- Text area with dynamic label and placeholder -->
+                <lightning-textarea
+                    label={questionInputLabel}
+                    value={userPrompt}
+                    onchange={handlePromptChange}
+                    placeholder={questionInputPlaceholder}
+                    class="slds-m-bottom_small question-input">
+                </lightning-textarea>
+
+                <!-- Replace Lightning buttons with custom buttons -->
+                <div class="action-buttons-container slds-m-bottom_medium">
+                    <!-- Custom Ask button -->
+                    <button 
+                        class="custom-button primary-button" 
+                        onclick={handleAsk} 
+                        disabled={areActionsDisabled}
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52">
+                                <path d="M30.2 3.2c-2.4-2.4-6.3-2.4-8.7 0-2.4 2.4-2.4 6.3 0 8.7l1.4 1.4c.7.7 1.9.2 1.9-.8V9.3c0-1.8 1.6-3.4 3.4-3.4h3.2c1 0 1.5-1.2.8-1.9L30.2 3.2zM33.5 15.5h-14c-.8 0-1.5.7-1.5 1.5v14c0 .8.7 1.5 1.5 1.5h14c.8 0 1.5-.7 1.5-1.5V17c0-.8-.7-1.5-1.5-1.5zM26.5 40h-7c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5zM39.5 40h-7c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h7c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5z"></path>
+                            </svg>
+                        </span>
+                        <span class="button-label">{askButtonLabel}</span>
+                    </button>
+                    
+                    <!-- Custom Analyze button -->
+                    <button 
+                        if:true={showAnalyzeButton}
+                        class="custom-button secondary-button" 
+                        onclick={handleSummarize} 
+                        disabled={areActionsDisabled}
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52">
+                                <path d="M5 40.5c0 .8.7 1.5 1.5 1.5H8v2c0 1.1.9 2 2 2h32c1.1 0 2-.9 2-2v-30c0-1.1-.9-2-2-2H10c-1.1 0-2 .9-2 2v2H6.5c-.8 0-1.5.7-1.5 1.5v5c0 .8.7 1.5 1.5 1.5H8v4H6.5c-.8 0-1.5.7-1.5 1.5v5c0 .8.7 1.5 1.5 1.5H8v4H6.5c-.8 0-1.5.7-1.5 1.5v5zM36 20c0 .6-.4 1-1 1H17c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h18c.6 0 1 .4 1 1v2zm0 8c0 .6-.4 1-1 1H17c-.6 0-1-.4-1-1v-2c0-.6.4-1 1-1h18c.6 0 1 .4 1 1v2zm-18 7c0-.6.4-1 1-1h12c.6 0 1 .4 1 1v2c0 .6-.4 1-1 1H19c-.6 0-1-.4-1-1v-2z"></path>
+                            </svg>
+                        </span>
+                        <span class="button-label">Analyze Record</span>
+                    </button>
+                    
+                    <!-- Custom Analyze Images button -->
+                    <button 
+                        if:true={showImageAnalysisButton}
+                        class="custom-button secondary-button" 
+                        onclick={handleAnalyzeImages} 
+                        disabled={areActionsDisabled}
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52">
+                                <path d="M10 2h32c2.2 0 4 1.8 4 4v40c0 2.2-1.8 4-4 4H10c-2.2 0-4-1.8-4-4V6c0-2.2 1.8-4 4-4zm2 4v18l7.5-5 7.5 5V6H12zm12 18c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm8 12c0-4.4-3.6-8-8-8s-8 3.6-8 8v4h16v-4z"/>
+                            </svg>
+                        </span>
+                        <span class="button-label">{analyzeImagesButtonLabel}</span>
+                    </button>
+                    
+                    <!-- *NEW* Analyze Document Button -->
+                    <button 
+                        if:true={showAnalyzeDocumentButton}
+                        class="custom-button secondary-button" 
+                        onclick={handleAnalyzeDocumentClick}
+                        disabled={areActionsDisabled} 
+                        title={analyzeDocumentButtonLabel} 
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-2v-2h2v2zm0-4h-2v-2h2v2zm-2-4H8V8h2v2z"/>
+                            </svg>
+                        </span>
+                        <span class="button-label">{analyzeDocumentButtonLabel}</span>
+                    </button>
+                    
+                    <!-- Generate Report button -->
+                    <button 
+                        if:true={showGenerateReportButton}
+                        class="custom-button secondary-button" 
+                        onclick={handleGenerateReport}
+                        disabled={areReportActionsDisabled} 
+                        title="Generate Data Report" 
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52" fill="currentColor">
+                                <path d="M44 16h-4v-4c0-2.2-1.8-4-4-4H16c-2.2 0-4 1.8-4 4v4H8c-2.2 0-4 1.8-4 4v20c0 2.2 1.8 4 4 4h36c2.2 0 4-1.8 4-4V20c0-2.2-1.8-4-4-4zM16 12h20v4H16v-4zm0 24v-8h8v8h-8zm12 0v-8h12v8H28zm12-12H16v-4h28v4z"/>
+                            </svg>
+                        </span>
+                        <span class="button-label" if:false={isGeneratingReport}>Generate Report</span>
+                        <span class="button-label" if:true={isGeneratingReport}>Generating...</span>
+                    </button>
+                    
+                    <!-- Custom Comparison button -->
+                    <button 
+                        if:true={showComparisonButton}
+                        class="custom-button secondary-button" 
+                        onclick={handleComparisonCheck} 
+                        disabled={areActionsDisabled}
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52">
+                                <path d="M48.5 31h-45c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h45c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5zM48.5 42h-45c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h45c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5zM16 20h-3c-.8 0-1.5-.7-1.5-1.5v-3c0-.8.7-1.5 1.5-1.5h3c.8 0 1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5zM39 14h-3c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h3c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5zM27.5 4h-3c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h3c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5z"></path>
+                            </svg>
+                        </span>
+                        <span class="button-label">Compare to Standards</span>
+                    </button>
+                    
+                    <!-- Custom Clear button -->
+                    <button 
+                        class="custom-button secondary-button" 
+                        onclick={clearConversation} 
+                        disabled={areActionsDisabled}
+                    >
+                        <span class="button-icon">
+                            <svg width="16" height="16" viewBox="0 0 52 52">
+                                <path d="M46.5 4h-13c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h5.7L30.8 18.4c-1.9-1.1-4.1-1.8-6.4-1.8-6.6 0-12 5.1-12.4 11.6-.4 6.7 4.7 12.3 11.3 12.7.6 0 1.1 0 1.7-.1 5.3-.7 9.5-4.9 10.2-10.2.5-3.7-.8-7.3-3.4-9.6l8.4-8.4V18c0 .8.7 1.5 1.5 1.5h3c.8 0 1.5-.7 1.5-1.5V5.5c0-.8-.7-1.5-1.5-1.5zm-16.1 24.5c-.4 2.8-2.6 5-5.4 5.4-3.8.5-7-2.2-7-5.9 0-3.1 2.4-5.7 5.5-5.9 1.8-.1 3.5.5 4.7 1.7s2 2.8 2.2 4.7z"></path>
+                            </svg>
+                        </span>
+                        <span class="button-label">Clear Chat</span>
+                    </button>
+                </div>
+
+                <!-- Modal Container - Wrap modal and backdrop -->
+                <div class="modal-wrapper" if:true={showSaveAnalysisModal}>
+                    <!-- Save Analysis Modal -->
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open component-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Save Record Synopsis</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>Would you like to save this synopsis to the <strong>{fieldLabel}</strong> field?</p>
+                                <div class="slds-m-top_medium">
+                                    <div class="slds-grid slds-grid_align-spread slds-m-bottom_x-small">
+                                        <h3 class="slds-text-heading_small">Synopsis Preview:</h3>
+                                        <div class="character-count">
+                                            <span class={characterCountClass}>{analysisSummaryCharCount}</span>/600 characters
+                                        </div>
+                                    </div>
+                                    <div class="slds-p-around_medium slds-border_left slds-border_green summary-preview">
+                                        <lightning-formatted-rich-text value={analysisSummary}></lightning-formatted-rich-text>
+                                    </div>
+                                </div>
+                                <div class="slds-m-top_medium slds-text-body_small slds-text-color_weak">
+                                    <p>This synopsis will be visible to anyone with access to this record, helping them quickly understand key information.</p>
+                                    <p class="slds-m-top_x-small">Character limit: 600 (enforced by system)</p>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_neutral" onclick={handleSaveAnalysisCancel}>Cancel</button>
+                                <button class="slds-button slds-button_brand" onclick={handleSaveAnalysisConfirm}>Save Synopsis</button>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open component-backdrop"></div>
+                </div>
+                <!-- End Modal Container -->
+
+                <!-- New Modal for Extracting Fields from Documents -->
+                <div class="modal-wrapper" if:true={showExtractFieldsModal}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="extract-modal-heading" aria-modal="true" aria-describedby="extract-modal-content" class="slds-modal slds-fade-in-open component-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="extract-modal-heading" class="slds-text-heading_medium slds-hyphenate">Extract Data from Documents</h2>
+                                <lightning-button-icon icon-name="utility:close" alternative-text="Close" title="Close" onclick={handleExtractFieldsCancel} class="slds-modal__close"></lightning-button-icon>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="extract-modal-content">
+                                <p class="slds-m-bottom_medium">Review the data extracted from the analyzed documents. For each field, select the value you want to update on the record, or choose to keep the current value.</p>
+                                
+                                <div if:true={isExtractingFields} class="enhanced-loading-container slds-m-vertical_medium">
+                                    <div class="loading-content">
+                                        <!-- <div class="spinner-container">
+                                            <div class="pulse-ring"></div>
+                                        </div> -->
+                                        <div class="loading-info">
+                                            <p class="loading-text">AI is extracting data, please wait...</p>
+                                            <div class="progress-bar-container">
+                                                <div class="progress-bar">
+                                                    <div class="progress-fill"></div>
+                                                </div>
+                                                <span class="progress-text">Analyzing documents...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <template if:false={isExtractingFields}>
+                                    <template for:each={extractedFieldsData} for:item="field">
+                                        <div key={field.id} class="slds-form-element slds-m-bottom_large">
+                                            <label class="slds-form-element__label" for={field.id}>{field.label} <span class="slds-text-body_small slds-text-color_weak">({field.apiName} - {field.type})</span></label>
+                                            <div class="slds-form-element__control slds-m-top_xx-small">
+                                                <lightning-combobox
+                                                    name={field.apiName}
+                                                    label={field.label} 
+                                                    variant="label-hidden" 
+                                                    value={field.selectedValue}
+                                                    options={field.options}
+                                                    onchange={handleExtractFieldChange}
+                                                    dropdown-alignment="auto"
+                                                    class="slds-combobox_responsive">
+                                                </lightning-combobox>
+                                            </div>
+                                            <div if:true={field.currentValue}
+                                                 class="slds-text-body_small slds-text-color_weak slds-m-top_xx-small">
+                                                Current Value on Record: {field.currentValue}
+                                            </div>
+                                        </div>
+                                    </template>
+                                </template>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_neutral" onclick={handleExtractFieldsCancel} disabled={isExtractingFields}>Cancel</button>
+                                <button class="slds-button slds-button_brand" onclick={handleExtractFieldsConfirm} disabled={isExtractingFields}>Confirm and Update Record</button>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open component-backdrop"></div>
+                </div>
+                <!-- End New Modal for Extracting Fields from Documents -->
+                
+                <!-- Comparison Input Modal -->
+                <div class="modal-wrapper" if:true={showComparisonModal}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="comparison-modal-heading" aria-modal="true" aria-describedby="comparison-modal-content" class="slds-modal slds-fade-in-open component-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="comparison-modal-heading" class="slds-text-heading_medium slds-hyphenate">Compare to Standards</h2>
+                                <lightning-button-icon icon-name="utility:close" alternative-text="Close" title="Close" onclick={handleComparisonModalCancel} class="slds-modal__close"></lightning-button-icon>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="comparison-modal-content">
+                                <p class="slds-m-bottom_medium">Enter the content you want to compare against the configured standards and requirements.</p>
+                                
+                                <lightning-textarea
+                                    label="Content to Compare"
+                                    value={comparisonInput}
+                                    onchange={handleComparisonInputChange}
+                                    placeholder="Enter the application text, document content, or any information to be evaluated against the standards..."
+                                    field-level-help="This content will be analyzed against the predefined rules and standards to determine compliance."
+                                    max-length="10000"
+                                    class="slds-m-bottom_medium">
+                                </lightning-textarea>
+                                
+                                <div class="slds-text-body_small slds-text-color_weak">
+                                    <p>The AI will compare your input against the configured standards and provide:</p>
+                                    <ul class="slds-list_dotted slds-m-top_x-small">
+                                        <li>Overall assessment (meets/does not meet standards)</li>
+                                        <li>Detailed analysis of each requirement</li>
+                                        <li>Specific strengths and weaknesses</li>
+                                        <li>Suggestions for improvement</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_neutral" onclick={handleComparisonModalCancel}>Cancel</button>
+                                <button class="slds-button slds-button_brand" onclick={handleComparisonModalConfirm} disabled={isComparisonButtonDisabled}>Compare</button>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open component-backdrop"></div>
+                </div>
+                <!-- End Comparison Input Modal -->
+
+                <!-- Document Selection Modal -->
+                <div class="modal-wrapper" if:true={showDocumentSelectionModal}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="document-selection-modal-heading" aria-modal="true" aria-describedby="document-selection-modal-content" class="slds-modal slds-fade-in-open component-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="document-selection-modal-heading" class="slds-text-heading_medium slds-hyphenate">Select Documents to Analyze</h2>
+                                <lightning-button-icon icon-name="utility:close" alternative-text="Close" title="Close" onclick={handleDocumentSelectionCancel} class="slds-modal__close"></lightning-button-icon>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="document-selection-modal-content">
+                                <p class="slds-m-bottom_medium">Choose which PDF documents you want to analyze. You can select multiple documents.</p>
+                                
+                                <div class="slds-m-bottom_medium">
+                                    <div class="slds-form-element">
+                                        <div class="slds-form-element__control">
+                                            <label class="slds-checkbox">
+                                                <input type="checkbox" name="select-all" onchange={handleSelectAllDocuments} />
+                                                <span class="slds-checkbox_faux"></span>
+                                                <span class="slds-form-element__label slds-text-body_small">Select All Documents</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="document-list slds-border_top slds-p-top_medium">
+                                    <template for:each={pdfDocuments} for:item="document">
+                                        <div key={document.id} class="document-item slds-m-bottom_small slds-p-around_small slds-border_left slds-border_blue slds-border_left-4">
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control">
+                                                    <label class="slds-checkbox">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            value={document.id} 
+                                                            data-document-id={document.id}
+                                                            onchange={handleDocumentSelectionChange} 
+                                                        />
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-form-element__label">
+                                                            <div class="document-info">
+                                                                <div class="document-title slds-text-heading_small">{document.title}</div>
+                                                                <div class="document-details slds-text-body_small slds-text-color_weak">
+                                                                    <template if:true={document.contentSize}>
+                                                                        Size: {document.contentSize} | 
+                                                                    </template>
+                                                                    <template if:true={document.createdDate}>
+                                                                        Created: {document.createdDate}
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                                
+                                <div class="slds-text-body_small slds-text-color_weak slds-m-top_medium">
+                                    <p><strong>Note:</strong> Due to processing limitations, a maximum of 3 documents can be analyzed at once. If you select more than 3, only the first 3 will be processed.</p>
+                                </div>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_neutral" onclick={handleDocumentSelectionCancel}>Cancel</button>
+                                <button class="slds-button slds-button_brand" onclick={handleDocumentSelectionConfirm}>Analyze Selected Documents</button>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open component-backdrop"></div>
+                </div>
+                <!-- End Document Selection Modal -->
+
+                <!-- Report Modal -->
+                <div class="modal-wrapper" if:true={showReportModal}>
+                    <section role="dialog" tabindex="-1" aria-labelledby="report-modal-heading" aria-modal="true" aria-describedby="report-modal-content" class="slds-modal slds-fade-in-open component-modal">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="report-modal-heading" class="slds-text-heading_medium slds-hyphenate">Generated Report</h2>
+                                <lightning-button-icon icon-name="utility:close" alternative-text="Close" title="Close" onclick={handleReportModalClose} class="slds-modal__close"></lightning-button-icon>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="report-modal-content">
+                                <template if:true={reportData}>
+                                    <div class="report-controls slds-m-bottom_medium">
+                                        <div class="slds-grid slds-grid_align-spread slds-gutters">
+                                            <div class="slds-col slds-size_6-of-12">
+                                                <lightning-combobox
+                                                    label="Chart Type"
+                                                    value={reportChartType}
+                                                    options={chartTypeOptions}
+                                                    onchange={handleChartTypeChange}>
+                                                </lightning-combobox>
+                                            </div>
+                                            <div class="slds-col slds-size_6-of-12 slds-text-align_right">
+                                                <div class="report-summary">
+                                                    <span class="slds-text-heading_small">{reportSummary}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sample Data Notice -->
+                                    <template if:true={reportData.isSampleData}>
+                                        <div class="slds-scoped-notification slds-media slds-scoped-notification_light slds-m-bottom_medium" role="alert">
+                                            <div class="slds-media__figure">
+                                                <lightning-icon icon-name="utility:info" variant="info" size="small"></lightning-icon>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <p><strong>Sample Data:</strong> The chart below shows sample data. For more accurate results, try asking specific questions like "Show me Cases where status is Open" or "How many Accounts by type?"</p>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Chart Display Area -->
+                                    <div class={chartContainerClass}>
+                                        <template if:true={reportData.records}>
+                                            <!-- Bar Chart -->
+                                            <template if:true={isBarChart}>
+                                                <canvas class="chart-canvas" width="400" height="300"></canvas>
+                                            </template>
+
+                                            <!-- Pie Chart -->
+                                            <template if:true={isPieChart}>
+                                                <canvas class="chart-canvas" width="400" height="300"></canvas>
+                                            </template>
+
+                                            <!-- Line Chart -->
+                                            <template if:true={isLineChart}>
+                                                <canvas class="chart-canvas" width="400" height="300"></canvas>
+                                            </template>
+
+                                            <!-- Data Table -->
+                                            <template if:true={isDataTable}>
+                                                <div class="data-table-container">
+                                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+                                                        <thead>
+                                                            <tr class="slds-line-height_reset">
+                                                                <th class="slds-text-title_caps" scope="col">Label</th>
+                                                                <th class="slds-text-title_caps" scope="col">Value</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <template for:each={reportData.records} for:item="record">
+                                                                <tr key={record.label} class="slds-hint-parent">
+                                                                    <td data-label="Label">
+                                                                        <div class="slds-cell-wrap" title={record.label}>{record.label}</div>
+                                                                    </td>
+                                                                    <td data-label="Value">
+                                                                        <div class="slds-cell-wrap">{record.value}</div>
+                                                                    </td>
+                                                                </tr>
+                                                            </template>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <template if:true={isGeneratingReport}>
+                                    <div class="slds-align_absolute-center slds-p-around_large">
+                                        <lightning-spinner alternative-text="Generating report..." size="medium"></lightning-spinner>
+                                        <p class="slds-m-top_small">Generating report...</p>
+                                    </div>
+                                </template>
+
+                                <template if:true={reportError}>
+                                    <div class="slds-scoped-notification slds-media slds-scoped-notification_light" role="alert">
+                                        <div class="slds-media__figure">
+                                            <lightning-icon icon-name="utility:error" variant="error" size="small"></lightning-icon>
+                                        </div>
+                                        <div class="slds-media__body">
+                                            <p>{reportError}</p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <footer class="slds-modal__footer">
+                                <button class="slds-button slds-button_neutral" onclick={handleReportModalClose}>Close</button>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open component-backdrop"></div>
+                </div>
+                <!-- End Report Modal -->
+
+                <div if:true={isLoadingOrGeneratingReport} class="enhanced-loading-container">
+                    <div class="loading-content">
+                        <!-- <div class="spinner-container">
+                            <div class="pulse-ring"></div>
+                        </div> -->
+                        <div class="loading-info">
+                            <p class="loading-text" if:false={isGeneratingReport}>Analyzing data and generating response...</p>
+                            <p class="loading-text" if:true={isGeneratingReport}>Generating interactive report and charts...</p>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                                <span class="progress-text" if:false={isGeneratingReport}>Processing your request...</span>
+                                <span class="progress-text" if:true={isGeneratingReport}>Analyzing data and creating visualizations...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div if:true={hasError} class="error-container slds-text-color_error slds-m-bottom_small slds-p-around_small slds-border_left slds-border_red slds-border_left-4">
+                    <lightning-icon icon-name="utility:error" alternative-text="Error" size="small" class="slds-m-right_small"></lightning-icon>
+                    {errorMessage}
+                </div>
+
+                <!-- Removed Typing indicator block as simulateTyping is no longer used -->
+                <!-- <div if:true={isTyping} class="typing-indicator-container"> ... </div> -->
+
+                <!-- Response display - no typing animation -->
+                <template if:true={response}>
+                    <div class="response-container">
+                        <div class="slds-grid slds-grid_align-center slds-gutters slds-m-bottom_small">
+                            <div class="slds-col slds-size_12-of-12">
+                                <span class="model-badge slds-badge slds-theme_success slds-m-bottom_small" style="white-space: normal;">
+                                    Response generated using {selectedLLMLabel}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="response-text">
+                            <lightning-formatted-rich-text value={formattedResponse}></lightning-formatted-rich-text>
+                        </div>
+                        <div class="slds-grid slds-grid_align-end slds-m-top_medium">
+                            <lightning-button-icon 
+                                icon-name="utility:copy_to_clipboard" 
+                                alternative-text="Copy to clipboard" 
+                                title="Copy to clipboard"
+                                onclick={copyResponseToClipboard}
+                                class="slds-m-left_x-small copy-button">
+                            </lightning-button-icon>
+                        </div>
+                    </div>
+                </template>
+                
+                <!-- Chat history section -->
+                <div class="conversation-header slds-m-top_medium" if:true={conversationHistory.length}>
+                    <div class="slds-grid slds-grid_align-spread">
+                        <div class="slds-col">
+                            <h3 class="slds-text-heading_small">Conversation History</h3>
+                        </div>
+                        <div class="slds-col slds-text-align_right">
+                            <lightning-button-icon
+                                icon-name={toggleIconName}
+                                alternative-text={toggleAlternativeText}
+                                title={toggleTitle}
+                                onclick={toggleConversationHistory}
+                                class="toggle-chat-button"
+                                data-expanded={showConversationHistory}>
+                            </lightning-button-icon>
+                        </div>
+                    </div>
+                    
+                    <!-- History limit info -->
+                    <div class="history-info slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                        {historyLimitMessage}
+                    </div>
+                    
+                    <!-- Conversation summary if available -->
+                    <div class="summary-container slds-m-top_small slds-p-around_small" if:true={conversationSummary}>
+                        <div class="summary-header">
+                            <lightning-icon icon-name="utility:summary" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            <span class="summary-title">Conversation Summary</span>
+                        </div>
+                        <div class="summary-content slds-p-top_x-small">
+                            <lightning-formatted-rich-text value={formattedSummary}></lightning-formatted-rich-text>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="conversation-container" data-expanded={showConversationHistory}>
+                    <template for:each={conversationHistory} for:item="message">
+                        <div key={message.id} class="chat-message" data-user={message.isUser}>
+                            <div class="message-header">
+                                <span class="message-sender">{message.sender}</span>
+                                <span class="message-timestamp">{message.timestamp}</span>
+                                <template if:false={message.isUser}>
+                                    <span class="message-model">{message.model}</span>
+                                </template>
+                            </div>
+                            <div class="message-content">
+                                <lightning-formatted-rich-text value={message.formattedContent}></lightning-formatted-rich-text>
+                            </div>
+                            <template if:false={message.isUser}>
+                                <div class="message-actions">
+                                    <lightning-button-icon
+                                        icon-name="utility:copy_to_clipboard"
+                                        alternative-text="Copy to clipboard" 
+                                        title="Copy to clipboard"
+                                        onclick={copyMessageToClipboard}
+                                        data-message={message.content}
+                                        class="copy-message-button">
+                                    </lightning-button-icon>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Footer section with Flow-specific indicator when in Flow context -->
+            <div slot="footer" if:true={conversationOutput} class="slds-text-color_weak slds-text-align_center slds-text-body_small">
+                <lightning-icon icon-name="utility:flow" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                Running in Flow context - conversation data will be available in Flow variables
+            </div>
+        </lightning-card>
+    </div>
+</template>
